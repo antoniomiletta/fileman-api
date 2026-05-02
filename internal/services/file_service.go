@@ -21,4 +21,6 @@ func NewFileService(repo ports.FileRepository, storage ports.StorageBackend) *Fi
 }
 
 // File content to storage with s.storage.Upload(), metadata to db with s.repo.Create()
-func (s *FileService) Upload(ctx context.Context, fileKey string, r io.Reader, size int64) (*domain.File, error)
+func (s *FileService) CreateFile(ctx context.Context, fileKey string, r io.Reader, size int64) (*domain.File, error)
+
+func (s *FileService) ListFromFolder(ctx context.Context, folderID string) ([]*domain.File, error)
