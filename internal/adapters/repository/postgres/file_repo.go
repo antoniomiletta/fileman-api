@@ -17,3 +17,6 @@ func NewFileRepository(db *DB) *FileRepository {
 // sql queries
 func (r *FileRepository) Create(ctx context.Context, file *domain.File) error
 func (r *FileRepository) ListFromFolder(ctx context.Context, folderID string) ([]*domain.File, error)
+func (r *FileRepository) GetByID(ctx context.Context, id string) (*domain.File, error)
+func (r *FileRepository) Move(ctx context.Context, id, newFolderID string) error
+func (r *FileRepository) Delete(ctx context.Context, id string) error

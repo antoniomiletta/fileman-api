@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/antoniomiletta/fileman/config"
+	_ "github.com/lib/pq"
 )
 
 type DB struct {
@@ -14,7 +15,7 @@ type DB struct {
 func Connect(cfg config.DatabaseConfig) (*DB, error) {
 	conn, err := sql.Open("postgres", cfg.URL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open db: %w", err)
+		return nil, fmt.Errorf("failed to connect to db: %w", err)
 	}
 
 	conn.SetMaxOpenConns(cfg.MaxOpenConns)

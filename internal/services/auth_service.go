@@ -1,6 +1,8 @@
 package services
 
 import (
+	"context"
+
 	"github.com/antoniomiletta/fileman/internal/domain"
 	"github.com/antoniomiletta/fileman/internal/ports"
 )
@@ -15,6 +17,5 @@ func NewAuthService(repo ports.AuthRepository) *AuthService {
 	}
 }
 
-func (s *AuthService) Register(user *domain.User) error
-
-func (s *AuthService) Login(email string, password string) error
+func (s *AuthService) Register(ctx context.Context, user *domain.User) error
+func (s *AuthService) Login(ctx context.Context, email, password string) error

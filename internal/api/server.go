@@ -28,3 +28,7 @@ func NewServer(authSvc *services.AuthService, fileSvc *services.FileService, fol
 
 	return s
 }
+
+func (s *Server) Start() {
+	s.HttpServer.ListenAndServe()
+}

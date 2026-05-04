@@ -9,11 +9,13 @@ import (
 
 func (s *Server) Router() http.Handler {
 	mux := http.DefaultServeMux
+
 	authHandler := handlers.NewAuthHandler(s.AuthSvc)
 	fileHandler := handlers.NewFileHandler(s.FileSvc)
 	folderHandler := handlers.NewFolderHandler(s.FolderSvc)
 
-	mux.HandleFunc("POST /auth/login", authHandler.Register)
+	mux.HandleFunc("POST /auth/register", authHandler.Register)
+	mux.HandleFunc("POST /auth/login", authHandler.Login)
 
 	protected := middleware.Chain(middleware.Auth)
 
