@@ -1,14 +1,20 @@
 package domain
 
-import "time"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type File struct {
-	ID          string
-	ParentID    string
-	Name        string
-	Extension   string
-	Size        int64
-	StoragePath string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	gorm.Model
+
+	ID          string    `json:"id" gorm:""`
+	ParentID    string    `json:"parentId"`
+	Name        string    `json:"name"`
+	Extension   string    `json:"extension"`
+	Size        int64     `json:"size"`
+	StoragePath string    `json:"storagePath"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
 }

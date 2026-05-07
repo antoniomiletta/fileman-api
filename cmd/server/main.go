@@ -7,7 +7,6 @@ import (
 	"github.com/antoniomiletta/fileman/internal/adapters/repository/postgres"
 	"github.com/antoniomiletta/fileman/internal/adapters/storage/local"
 	"github.com/antoniomiletta/fileman/internal/api"
-	"github.com/antoniomiletta/fileman/internal/ports"
 	"github.com/antoniomiletta/fileman/internal/services"
 )
 
@@ -20,13 +19,8 @@ func main() {
 	}
 	defer db.Close()
 
-	var storage ports.StorageBackend
-	var storageErr error
-	switch cfg.Storage.Backend {
-	default:
-		storage, storageErr = local.New(cfg.Storage)
-	}
-	if storageErr != nil {
+	storage, err := local.New(cfg.Storage)
+	if err != nil {
 		log.Fatalf("failed to initialize storage backend: %v", err)
 	}
 

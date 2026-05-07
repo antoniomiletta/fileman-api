@@ -3,10 +3,9 @@ package domain
 import "time"
 
 type Folder struct {
-	ID        string
-	ParentID  string
-	Name      string
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID        string    `json:"id"`
+	ParentID  string    `json:"parentId"`
+	Name      string    `json:"name"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
-

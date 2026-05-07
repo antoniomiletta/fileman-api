@@ -17,5 +17,5 @@ func NewFolderService(repo ports.FolderRepository) *FolderService {
 	}
 }
 
-// Store metada to db with s.repo.Create()
+// Store metadata to db with s.repo.Create()
 func (s *FolderService) CreateFolder(ctx context.Context, folder *domain.Folder) error

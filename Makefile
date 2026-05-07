@@ -1,12 +1,18 @@
 .DEFAULT_GOAL := build
 
-.PHONY:build run clean
+.PHONY:build run clean docker-up docker-down
 
 build:
-	go build ./cmd/server/main.go
+	go build ./cmd/server
 
-run: build
-	go run ./cmd/server/main.go
+run:
+	go run ./cmd/server
 
 clean:
 	go clean
+
+docker-up:
+	docker compose up -d
+
+docker-down:
+	docker compose down -d

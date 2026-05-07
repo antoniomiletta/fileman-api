@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/antoniomiletta/fileman/internal/api/handlers"
-	"github.com/antoniomiletta/fileman/internal/api/middleware"
+	"github.com/antoniomiletta/fileman/internal/api/middlewares"
 )
 
 func (s *Server) Router() http.Handler {
@@ -17,7 +17,7 @@ func (s *Server) Router() http.Handler {
 	mux.HandleFunc("POST /auth/register", authHandler.Register)
 	mux.HandleFunc("POST /auth/login", authHandler.Login)
 
-	protected := middleware.Chain(middleware.Auth)
+	protected := middlewares.Chain(middlewares.Auth)
 
 	mux.Handle("POST /files", protected(http.HandlerFunc(fileHandler.CreateFile)))
 	mux.Handle("GET /files/{folderID}", protected(http.HandlerFunc(fileHandler.ListFromFolder)))
