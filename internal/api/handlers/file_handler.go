@@ -17,5 +17,6 @@ func NewFileHandler(svc *services.FileService) *FileHandler {
 }
 
 // redirect to service
-func (h *FileHandler) CreateFile(w http.ResponseWriter, r *http.Request)
-func (h *FileHandler) ListFromFolder(w http.ResponseWriter, r *http.Request)
+func (h *FileHandler) Create(w http.ResponseWriter, r *http.Request)
+func (h *FileHandler) Move(w http.ResponseWriter, r *http.Request)
+func (h *FileHandler) Delete(w http.ResponseWriter, r *http.Request)

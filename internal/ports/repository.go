@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/antoniomiletta/fileman/internal/domain"
+	"github.com/google/uuid"
 )
 
 type AuthRepository interface {
@@ -13,16 +14,13 @@ type AuthRepository interface {
 
 type FileRepository interface {
 	Create(ctx context.Context, file *domain.File) error
-	ListFromFolder(ctx context.Context, folderID string) ([]*domain.File, error)
-	GetByID(ctx context.Context, id string) (*domain.File, error)
-	Move(ctx context.Context, id, newFolderID string) error
-	Delete(ctx context.Context, id string) error
+	Move(ctx context.Context, id, newFolderID uuid.UUID) error
+	Delete(ctx context.Context, id uuid.UUID) error
 }
 
 type FolderRepository interface {
 	Create(ctx context.Context, folder *domain.Folder) error
-	ListChildren(ctx context.Context, folderID string) ([]*domain.Folder, error)
-	GetByID(ctx context.Context, id string) (*domain.Folder, error)
-	Move(ctx context.Context, id, newParentID string) error
-	Delete(ctx context.Context, id string) error
+	ListChildren(ctx context.Context, folderID uuid.UUID) ([]*domain.Folder, error)
+	Move(ctx context.Context, id, newParentID uuid.UUID) error
+	Delete(ctx context.Context, id uuid.UUID) error
 }

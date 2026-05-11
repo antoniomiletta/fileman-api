@@ -33,6 +33,5 @@ func main() {
 	folderSvc := services.NewFolderService(folderRepo)
 
 	server := api.NewServer(authSvc, fileSvc, folderSvc, cfg.Server)
-
 	server.Start()
 }

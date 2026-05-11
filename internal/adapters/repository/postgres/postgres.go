@@ -14,7 +14,7 @@ type DB struct {
 }
 
 func Connect(cfg config.DatabaseConfig) (*DB, error) {
-	db, err := gorm.Open(pg.Open(cfg.URL))
+	db, err := gorm.Open(pg.Open(cfg.URL), &gorm.Config{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to db: %w", err)
 	}

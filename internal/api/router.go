@@ -19,11 +19,14 @@ func (s *Server) Router() http.Handler {
 
 	protected := middlewares.Chain(middlewares.Auth)
 
-	mux.Handle("POST /files", protected(http.HandlerFunc(fileHandler.CreateFile)))
-	mux.Handle("GET /files/{folderID}", protected(http.HandlerFunc(fileHandler.ListFromFolder)))
+	mux.Handle("POST /folders", protected(http.HandlerFunc(folderHandler.Create)))
+	mux.Handle("GET /folders/{id}", protected(http.HandlerFunc(folderHandler.ListChildren)))
+	mux.Handle("PATCH /folders/{id}/move", protected(http.HandlerFunc(folderHandler.Move)))
+	mux.Handle("DELETE /folders/{id}", protected(http.HandlerFunc(folderHandler.Delete)))
 
-	mux.Handle("GET /folders", protected(http.HandlerFunc(folderHandler.CreateFolder)))
-	mux.Handle("POST /folders/{folderID}", protected(http.HandlerFunc(folderHandler.ListChildren)))
+	mux.Handle("POST /files", protected(http.HandlerFunc(fileHandler.Create)))
+	mux.Handle("PATCH /files/{id}/move", protected(http.HandlerFunc(fileHandler.Move)))
+	mux.Handle("DELETE /files/{id}", protected(http.HandlerFunc(fileHandler.Delete)))
 
 	return mux
 }
