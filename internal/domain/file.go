@@ -6,13 +6,22 @@ import (
 	"github.com/google/uuid"
 )
 
+type UploadStatus string
+
+const (
+	UploadStatusPending  UploadStatus = "pending"
+	UploadStatusComplete UploadStatus = "complete"
+)
+
 type File struct {
-	ID          uuid.UUID  `json:"id"`
-	ParentID    *uuid.UUID `json:"parentId"`
-	Name        string     `json:"name"`
-	Extension   string     `json:"extension"`
-	Size        int64      `json:"size"`
-	StoragePath string     `json:"storagePath"`
-	CreatedAt   time.Time  `json:"createdAt"`
-	UpdatedAt   time.Time  `json:"updatedAt"`
+	ID          uuid.UUID
+	OwnerID     uuid.UUID
+	ParentID    *uuid.UUID
+	Name        string
+	Extension   string
+	Size        int64
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	StoragePath string
+	Status      UploadStatus
 }

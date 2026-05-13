@@ -19,7 +19,6 @@ func NewFolderHandler(svc *services.FolderService) *FolderHandler {
 	}
 }
 
-// redirect to service
 func (h *FolderHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var folder domain.Folder
 
@@ -58,18 +57,18 @@ func (h *FolderHandler) Move(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid id parameter", http.StatusBadRequest)
 	}
 
-	var idStr string
-	if err := json.NewDecoder(r.Body).Decode(&idStr); err != nil {
+	var newParentIdStr string
+	if err := json.NewDecoder(r.Body).Decode(&newParentIdStr); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	newFolderID, err := uuid.Parse(idStr)
+	newParentID, err := uuid.Parse(newParentIdStr)
 	if err != nil {
 		http.Error(w, "invalid id parameter", http.StatusBadRequest)
 	}
 
-	if err := h.svc.Move(r.Context(), folderID, newFolderID); err != nil {
+	if err := h.svc.Move(r.Context(), folderID, newParentID); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
