@@ -22,7 +22,5 @@ func NewFileService(repo ports.FileRepository, storage ports.StorageBackend) *Fi
 
 // File content to storage with s.storage.Upload(), metadata to db with s.repo.Create()
 func (s *FileService) Create(ctx context.Context, file *domain.File) error
-
 func (s *FileService) Move(ctx context.Context, id, newFolderID uuid.UUID) error
-
 func (s *FileService) Delete(ctx context.Context, id uuid.UUID) error

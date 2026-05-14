@@ -19,6 +19,7 @@ func NewFolderHandler(svc *services.FolderService) *FolderHandler {
 	}
 }
 
+// refactor for req type and New() for Domain mapping
 func (h *FolderHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var folder domain.Folder
 

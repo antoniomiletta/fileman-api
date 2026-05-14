@@ -14,8 +14,10 @@ type ServerConfig struct {
 }
 
 type DatabaseConfig struct {
-	URL          string
-	MaxOpenConns int
+	URL             string
+	MaxOpenConns    int
+	MaxIdleConns    int
+	ConnMaxLifetime time.Duration
 }
 
 type StorageConfig struct {
@@ -34,8 +36,10 @@ func Load() *Config {
 			Port: getEnv("PORT", "8080"),
 		},
 		Database: DatabaseConfig{
-			URL:          mustGetEnv("DATABASE_URL"),
-			MaxOpenConns: getInt("DB_MAX_OPEN_CONNS", 20),
+			URL:             mustGetEnv("DB_URL"),
+			MaxOpenConns:    getInt("DB_MAX_OPEN_CONNS", 20),
+			MaxIdleConns:    getInt("DB_MAX_IDLE_CONNS", 10),
+			ConnMaxLifetime: getDuration("DB_CONN_MAX_LIFETIME", time.Hour),
 		},
 		Storage: StorageConfig{
 			Backend:          getEnv("STORAGE_BACKEND", "local"),

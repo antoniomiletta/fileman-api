@@ -1,9 +1,6 @@
 package dto
 
 import (
-	"path/filepath"
-
-	"github.com/antoniomiletta/fileman/internal/domain"
 	"github.com/google/uuid"
 )
 
@@ -16,13 +13,6 @@ type MoveFileRequest struct {
 	NewParentID uuid.UUID `json:"new_parent_id"`
 }
 
-func (r *CreateFileRequest) ToDomain() *domain.File {
-	ext := filepath.Ext(r.Name)
-	name := r.Name[:len(r.Name)-len(ext)]
-
-	return &domain.File{
-		ParentID:  r.ParentID,
-		Name:      name,
-		Extension: ext,
-	}
+type DeleteFileRequest struct {
+	ID uuid.UUID `json:"id"`
 }

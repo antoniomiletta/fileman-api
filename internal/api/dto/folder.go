@@ -15,12 +15,5 @@ type MoveFolderRequest struct {
 }
 
 type ListChildrenResponse struct {
-	content domain.FolderContent
-}
-
-func (r *CreateFolderRequest) ToDomain() *domain.Folder {
-	return &domain.Folder{
-		ParentID: r.ParentID,
-		Name:     r.Name,
-	}
+	Content domain.FolderContent `json:"content"`
 }

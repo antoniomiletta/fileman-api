@@ -18,5 +18,4 @@ func NewAuthService(repo ports.AuthRepository) *AuthService {
 }
 
 func (s *AuthService) Register(ctx context.Context, user *domain.User) error
-
 func (s *AuthService) Login(ctx context.Context, email, password string) error

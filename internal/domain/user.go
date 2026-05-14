@@ -7,3 +7,16 @@ type User struct {
 	Email    string
 	Password string
 }
+
+type NewUserParams struct {
+	Email    string
+	Password string
+}
+
+func NewUser(p NewUserParams) User {
+	return User{
+		ID:       uuid.New(),
+		Email:    p.Email,
+		Password: p.Password,
+	}
+}

@@ -15,9 +15,5 @@ func NewAuthRepository(db *DB) *AuthRepository {
 }
 
 // sql queries
-func (r *AuthRepository) Register(ctx context.Context, user *domain.User) error {
-	r.db.conn.WithContext(ctx).Create(&user)
-	return nil
-}
-
+func (r *AuthRepository) Register(ctx context.Context, user *domain.User) error
 func (r *AuthRepository) Login(ctx context.Context, email, password string) (string, error)
