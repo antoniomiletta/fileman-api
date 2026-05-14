@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/antoniomiletta/fileman/internal/api/dto"
+	"github.com/antoniomiletta/fileman/internal/api/transport"
 	"github.com/antoniomiletta/fileman/internal/domain"
 	"github.com/antoniomiletta/fileman/internal/services"
 )
@@ -23,7 +24,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var req dto.RegisterRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
+		transport.WriteError(w, err)
 		return
 	}
 	defer r.Body.Close()
@@ -34,21 +35,25 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err := h.svc.Register(r.Context(), &user); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		transport.WriteError(w, err)
+		return
 	}
-
 }
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req dto.LoginRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
+		transport.WriteError(w, err)
 		return
 	}
 	defer r.Body.Close()
 
-	if err := h.svc.Login(r.Context(), req.Email, req.Password); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	token, err := h.svc.Login(r.Context(), req.Email, req.Password)
+	if err != nil {
+		transport.WriteError(w, err)
+		return
 	}
+
+	transport.WriteJSON(w, http.StatusOK, token)
 }
