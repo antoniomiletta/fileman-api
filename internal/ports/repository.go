@@ -10,6 +10,7 @@ import (
 type AuthRepository interface {
 	Register(ctx context.Context, user *domain.User) error
 	Login(ctx context.Context, email, password string) (string, error)
+	FindByEmail(ctx context.Context, email string) (*domain.User, error)
 }
 
 type FileRepository interface {
