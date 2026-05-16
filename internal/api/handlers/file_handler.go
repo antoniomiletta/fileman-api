@@ -6,7 +6,9 @@ import (
 	"path/filepath"
 
 	"github.com/antoniomiletta/fileman/internal/api/dto"
+	"github.com/antoniomiletta/fileman/internal/api/transport"
 	"github.com/antoniomiletta/fileman/internal/domain"
+	"github.com/antoniomiletta/fileman/internal/pkg/authenticator"
 	"github.com/antoniomiletta/fileman/internal/services"
 	"github.com/google/uuid"
 )
@@ -25,23 +27,22 @@ func (h *FileHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req dto.CreateFileRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
+		transport.WriteError(w, transport.ErrMalformedJSON)
 		return
 	}
 	defer r.Body.Close()
 
-	// TODO: impl get jwt sub from header for OwnerID and size from file sent
 	// ownerId :=
 	// size :=
 	fileExt := filepath.Ext(req.Name)
 	fileName := req.Name[:len(req.Name)-len(fileExt)]
 
 	file := domain.NewFile(domain.NewFileParams{
-		OwnerID:   uuid.New(),
+		OwnerID:   authenticator.GetIDFromToken(r.Header.Get("Authorization")),
 		ParentID:  req.ParentID,
 		Name:      fileName,
 		Extension: fileExt,
-		Size:      777,
+		Size:      0,
 	})
 
 	if err := h.svc.Create(r.Context(), &file); err != nil {

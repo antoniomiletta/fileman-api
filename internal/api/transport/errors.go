@@ -5,6 +5,7 @@ import (
 )
 
 var (
-	ErrMalformedJSON = errors.New("invalid JSON payload")
-	ErrInvalidQuery  = errors.New("invalid query parameters")
+	ErrMalformedJSON  = errors.New("invalid JSON payload")
+	ErrInvalidQuery   = errors.New("invalid query parameters")
+	ErrMalformedToken = errors.New("invalid authentication token format")
 )

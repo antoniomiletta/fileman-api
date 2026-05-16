@@ -24,7 +24,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var req dto.RegisterRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		transport.WriteError(w, err)
+		transport.WriteError(w, transport.ErrMalformedJSON)
 		return
 	}
 	defer r.Body.Close()
@@ -44,7 +44,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req dto.LoginRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		transport.WriteError(w, err)
+		transport.WriteError(w, transport.ErrMalformedJSON)
 		return
 	}
 	defer r.Body.Close()

@@ -4,8 +4,8 @@ import "errors"
 
 var (
 	ErrForbidden    = errors.New("not authorized")
-	ErrInvalidToken = errors.New("invalid authentication token")
 	ErrUserNotFound = errors.New("user not found")
+	ErrInvalidToken = errors.New("invalid or expired authentication token")
 
 	ErrInvalidCredentials  = errors.New("invalid credentials")
 	ErrCredentialsRequired = errors.New("email and password are required")

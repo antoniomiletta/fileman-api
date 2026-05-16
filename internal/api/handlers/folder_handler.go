@@ -26,15 +26,13 @@ func (h *FolderHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req dto.CreateFolderRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		transport.WriteError(w, err)
+		transport.WriteError(w, transport.ErrMalformedJSON)
 		return
 	}
 	defer r.Body.Close()
 
-	token := r.Header.Get("Authorization")
-
 	folder := domain.NewFolder(domain.NewFolderParams{
-		OwnerID:  authenticator.GetIDFromToken(token),
+		OwnerID:  authenticator.GetIDFromToken(r.Header.Get("Authorization")),
 		ParentID: req.ParentID,
 		Name:     req.Name,
 	})
@@ -49,7 +47,7 @@ func (h *FolderHandler) Create(w http.ResponseWriter, r *http.Request) {
 func (h *FolderHandler) ListChildren(w http.ResponseWriter, r *http.Request) {
 	folderID, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
-		transport.WriteError(w, err)
+		transport.WriteError(w, transport.ErrInvalidQuery)
 	}
 
 	content, err := h.svc.ListChildren(r.Context(), folderID)
@@ -63,18 +61,18 @@ func (h *FolderHandler) ListChildren(w http.ResponseWriter, r *http.Request) {
 func (h *FolderHandler) Move(w http.ResponseWriter, r *http.Request) {
 	folderID, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
-		transport.WriteError(w, domain.ErrInvalidToken)
+		transport.WriteError(w, transport.ErrInvalidQuery)
 	}
 
 	var newParentIdStr string
 	if err := json.NewDecoder(r.Body).Decode(&newParentIdStr); err != nil {
-		transport.WriteError(w, err)
+		transport.WriteError(w, transport.ErrMalformedJSON)
 		return
 	}
 
 	newParentID, err := uuid.Parse(newParentIdStr)
 	if err != nil {
-		transport.WriteError(w, err)
+		transport.WriteError(w, transport.ErrMalformedToken)
 	}
 
 	if err := h.svc.Move(r.Context(), folderID, newParentID); err != nil {
@@ -85,7 +83,7 @@ func (h *FolderHandler) Move(w http.ResponseWriter, r *http.Request) {
 func (h *FolderHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	folderID, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
-		transport.WriteError(w, err)
+		transport.WriteError(w, transport.ErrMalformedToken)
 	}
 
 	if err := h.svc.Delete(r.Context(), folderID); err != nil {
