@@ -6,7 +6,7 @@ import (
 
 	"github.com/antoniomiletta/fileman/internal/api/dto"
 	"github.com/antoniomiletta/fileman/internal/domain"
-	jwt "github.com/antoniomiletta/fileman/internal/pkg"
+	"github.com/antoniomiletta/fileman/internal/pkg/authenticator"
 	"github.com/antoniomiletta/fileman/internal/ports"
 )
 
@@ -40,7 +40,7 @@ func (s *AuthService) Register(ctx context.Context, user *domain.User) error {
 		return domain.ErrEmailTaken
 	}
 
-	user.Password = jwt.Hash(user.Password)
+	user.Password = authenticator.Hash(user.Password)
 
 	if err := s.repo.Register(ctx, user); err != nil {
 		return err
@@ -65,7 +65,7 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (string
 		return "", domain.ErrInvalidCredentials
 	}
 
-	if !jwt.CompareHash(user.Password, password) {
+	if !authenticator.CompareHash(user.Password, password) {
 		return "", domain.ErrInvalidCredentials
 	}
 

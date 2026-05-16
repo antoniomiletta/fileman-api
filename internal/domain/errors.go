@@ -3,7 +3,9 @@ package domain
 import "errors"
 
 var (
-	ErrForbidden = errors.New("not authorized")
+	ErrForbidden    = errors.New("not authorized")
+	ErrInvalidToken = errors.New("invalid authentication token")
+	ErrUserNotFound = errors.New("user not found")
 
 	ErrInvalidCredentials  = errors.New("invalid credentials")
 	ErrCredentialsRequired = errors.New("email and password are required")

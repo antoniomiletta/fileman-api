@@ -5,20 +5,24 @@ import (
 	"net/http"
 )
 
-func WriteJSON(w http.ResponseWriter, status int, data any) error {
+func WriteJSON(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 
-	return json.NewEncoder(w).Encode(data)
+	json.NewEncoder(w).Encode(data)
 }
 
-func WriteError(w http.ResponseWriter, err error) error {
-	httpErr := MapError(err)
+func WriteStatus(w http.ResponseWriter, status int) {
+	w.WriteHeader(status)
+}
+
+func WriteError(w http.ResponseWriter, err error) {
+	error := MapError(err)
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(httpErr.Status)
+	w.WriteHeader(error.Status)
 
-	return json.NewEncoder(w).Encode(map[string]string{
-		"error": httpErr.Message,
+	json.NewEncoder(w).Encode(map[string]string{
+		"error": error.Message,
 	})
 }

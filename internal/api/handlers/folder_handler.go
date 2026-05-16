@@ -4,7 +4,10 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/antoniomiletta/fileman/internal/api/dto"
+	"github.com/antoniomiletta/fileman/internal/api/transport"
 	"github.com/antoniomiletta/fileman/internal/domain"
+	"github.com/antoniomiletta/fileman/internal/pkg/authenticator"
 	"github.com/antoniomiletta/fileman/internal/services"
 	"github.com/google/uuid"
 )
@@ -19,68 +22,73 @@ func NewFolderHandler(svc *services.FolderService) *FolderHandler {
 	}
 }
 
-// refactor for req type and New() for Domain mapping
 func (h *FolderHandler) Create(w http.ResponseWriter, r *http.Request) {
-	var folder domain.Folder
+	var req dto.CreateFolderRequest
 
-	if err := json.NewDecoder(r.Body).Decode(&folder); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		transport.WriteError(w, err)
 		return
 	}
 	defer r.Body.Close()
 
+	token := r.Header.Get("Authorization")
+
+	folder := domain.NewFolder(domain.NewFolderParams{
+		OwnerID:  authenticator.GetIDFromToken(token),
+		ParentID: req.ParentID,
+		Name:     req.Name,
+	})
+
 	if err := h.svc.Create(r.Context(), &folder); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		transport.WriteError(w, err)
 	}
 
-	w.WriteHeader(http.StatusCreated)
+	transport.WriteStatus(w, http.StatusCreated)
 }
 
 func (h *FolderHandler) ListChildren(w http.ResponseWriter, r *http.Request) {
 	folderID, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
-		http.Error(w, "invalid id parameter", http.StatusBadRequest)
+		transport.WriteError(w, err)
 	}
 
 	content, err := h.svc.ListChildren(r.Context(), folderID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		transport.WriteError(w, err)
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(content)
+	transport.WriteJSON(w, http.StatusOK, content)
 }
 
 func (h *FolderHandler) Move(w http.ResponseWriter, r *http.Request) {
 	folderID, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
-		http.Error(w, "invalid id parameter", http.StatusBadRequest)
+		transport.WriteError(w, domain.ErrInvalidToken)
 	}
 
 	var newParentIdStr string
 	if err := json.NewDecoder(r.Body).Decode(&newParentIdStr); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
+		transport.WriteError(w, err)
 		return
 	}
 
 	newParentID, err := uuid.Parse(newParentIdStr)
 	if err != nil {
-		http.Error(w, "invalid id parameter", http.StatusBadRequest)
+		transport.WriteError(w, err)
 	}
 
 	if err := h.svc.Move(r.Context(), folderID, newParentID); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		transport.WriteError(w, err)
 	}
 }
 
 func (h *FolderHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	folderID, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
-		http.Error(w, "invalid id parameter", http.StatusBadRequest)
+		transport.WriteError(w, err)
 	}
 
 	if err := h.svc.Delete(r.Context(), folderID); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		transport.WriteError(w, err)
 	}
 }
