@@ -7,7 +7,7 @@ import (
 
 	"github.com/antoniomiletta/fileman/internal/api/dto"
 	"github.com/antoniomiletta/fileman/internal/api/transport"
-	"github.com/antoniomiletta/fileman/internal/domain"
+	"github.com/antoniomiletta/fileman/internal/domain/file"
 	"github.com/antoniomiletta/fileman/internal/pkg/authenticator"
 	"github.com/antoniomiletta/fileman/internal/services"
 	"github.com/google/uuid"
@@ -37,7 +37,7 @@ func (h *FileHandler) Create(w http.ResponseWriter, r *http.Request) {
 	fileExt := filepath.Ext(req.Name)
 	fileName := req.Name[:len(req.Name)-len(fileExt)]
 
-	file := domain.NewFile(domain.NewFileParams{
+	file := file.NewFile(file.NewFileParams{
 		OwnerID:   authenticator.GetIDFromToken(r.Header.Get("Authorization")),
 		ParentID:  req.ParentID,
 		Name:      fileName,
@@ -46,10 +46,10 @@ func (h *FileHandler) Create(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err := h.svc.Create(r.Context(), &file); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		transport.WriteError(w, err)
 	}
 
-	w.WriteHeader(http.StatusCreated)
+	transport.WriteStatus(w, http.StatusCreated)
 }
 
 // refactor all from here ->

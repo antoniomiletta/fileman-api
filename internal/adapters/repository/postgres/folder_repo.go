@@ -3,7 +3,7 @@ package postgres
 import (
 	"context"
 
-	"github.com/antoniomiletta/fileman/internal/domain"
+	"github.com/antoniomiletta/fileman/internal/domain/folder"
 	"github.com/google/uuid"
 )
 
@@ -16,7 +16,7 @@ func NewFolderRepository(db *DB) *FolderRepository {
 }
 
 // sql queries
-func (r *FolderRepository) Create(ctx context.Context, folder *domain.Folder) error
-func (r *FolderRepository) ListChildren(ctx context.Context, folderID uuid.UUID) ([]*domain.Folder, error)
+func (r *FolderRepository) Create(ctx context.Context, folder *folder.Folder) error
+func (r *FolderRepository) ListChildren(ctx context.Context, folderID uuid.UUID) ([]*folder.Folder, error)
 func (r *FolderRepository) Move(ctx context.Context, id, newParentID uuid.UUID) error
 func (r *FolderRepository) Delete(ctx context.Context, id uuid.UUID) error

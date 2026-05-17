@@ -4,7 +4,9 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/antoniomiletta/fileman/internal/domain"
+	"github.com/antoniomiletta/fileman/internal/domain/auth"
+	"github.com/antoniomiletta/fileman/internal/domain/file"
+	"github.com/antoniomiletta/fileman/internal/domain/folder"
 )
 
 type APIError struct {
@@ -13,28 +15,28 @@ type APIError struct {
 }
 
 var errorMap = map[error]int{
-	domain.ErrForbidden:           http.StatusUnauthorized,
-	domain.ErrInvalidToken:        http.StatusUnauthorized,
-	domain.ErrUserNotFound:        http.StatusNotFound,
-	domain.ErrInvalidCredentials:  http.StatusUnauthorized,
-	domain.ErrCredentialsRequired: http.StatusBadRequest,
-	domain.ErrInvalidEmail:        http.StatusBadRequest,
-	domain.ErrEmailTaken:          http.StatusConflict,
-	domain.ErrPasswordTooWeak:     http.StatusBadRequest,
+	auth.ErrForbidden:           http.StatusUnauthorized,
+	auth.ErrInvalidToken:        http.StatusUnauthorized,
+	auth.ErrUserNotFound:        http.StatusNotFound,
+	auth.ErrInvalidCredentials:  http.StatusUnauthorized,
+	auth.ErrCredentialsRequired: http.StatusBadRequest,
+	auth.ErrInvalidEmail:        http.StatusBadRequest,
+	auth.ErrEmailTaken:          http.StatusConflict,
+	auth.ErrPasswordTooWeak:     http.StatusBadRequest,
 
-	domain.ErrFileNotFound:     http.StatusNotFound,
-	domain.ErrFileNameRequired: http.StatusBadRequest,
-	domain.ErrFileNameInvalid:  http.StatusBadRequest,
-	domain.ErrFileNameConflict: http.StatusConflict,
-	domain.ErrFileTooLarge:     http.StatusBadRequest,
-	domain.ErrInvalidStatus:    http.StatusBadRequest,
+	file.ErrFileNotFound:     http.StatusNotFound,
+	file.ErrFileNameRequired: http.StatusBadRequest,
+	file.ErrFileNameInvalid:  http.StatusBadRequest,
+	file.ErrFileNameConflict: http.StatusConflict,
+	file.ErrFileTooLarge:     http.StatusBadRequest,
+	file.ErrInvalidStatus:    http.StatusBadRequest,
 
-	domain.ErrFolderNotFound:         http.StatusNotFound,
-	domain.ErrFolderNameRequired:     http.StatusBadRequest,
-	domain.ErrFolderNameInvalid:      http.StatusBadRequest,
-	domain.ErrFolderNameConflict:     http.StatusConflict,
-	domain.ErrCannotMoveToDescendant: http.StatusUnprocessableEntity,
-	domain.ErrCannotMoveRootFolder:   http.StatusUnprocessableEntity,
+	folder.ErrFolderNotFound:         http.StatusNotFound,
+	folder.ErrFolderNameRequired:     http.StatusBadRequest,
+	folder.ErrFolderNameInvalid:      http.StatusBadRequest,
+	folder.ErrFolderNameConflict:     http.StatusConflict,
+	folder.ErrCannotMoveToDescendant: http.StatusUnprocessableEntity,
+	folder.ErrCannotMoveRootFolder:   http.StatusUnprocessableEntity,
 
 	ErrMalformedJSON: http.StatusBadRequest,
 	ErrInvalidQuery:  http.StatusBadRequest,

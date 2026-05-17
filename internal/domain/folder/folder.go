@@ -1,8 +1,9 @@
-package domain
+package folder
 
 import (
 	"time"
 
+	"github.com/antoniomiletta/fileman/internal/domain/file"
 	"github.com/google/uuid"
 )
 
@@ -17,7 +18,7 @@ type Folder struct {
 
 type FolderContent struct {
 	Subfolders []Folder
-	Files      []File
+	Files      []file.File
 }
 
 type NewFolderParams struct {

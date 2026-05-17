@@ -3,7 +3,7 @@ package services
 import (
 	"context"
 
-	"github.com/antoniomiletta/fileman/internal/domain"
+	"github.com/antoniomiletta/fileman/internal/domain/file"
 	"github.com/antoniomiletta/fileman/internal/ports"
 	"github.com/google/uuid"
 )
@@ -21,6 +21,6 @@ func NewFileService(repo ports.FileRepository, storage ports.StorageBackend) *Fi
 }
 
 // File content to storage with s.storage.Upload(), metadata to db with s.repo.Create()
-func (s *FileService) Create(ctx context.Context, file *domain.File) error
+func (s *FileService) Create(ctx context.Context, fil *file.File) error
 func (s *FileService) Move(ctx context.Context, id, newFolderID uuid.UUID) error
 func (s *FileService) Delete(ctx context.Context, id uuid.UUID) error

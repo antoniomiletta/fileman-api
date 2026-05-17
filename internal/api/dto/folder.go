@@ -1,7 +1,7 @@
 package dto
 
 import (
-	"github.com/antoniomiletta/fileman/internal/domain"
+	"github.com/antoniomiletta/fileman/internal/domain/folder"
 	"github.com/google/uuid"
 )
 
@@ -15,5 +15,5 @@ type MoveFolderRequest struct {
 }
 
 type ListChildrenResponse struct {
-	Content domain.FolderContent `json:"content"`
+	Content folder.FolderContent `json:"content"`
 }

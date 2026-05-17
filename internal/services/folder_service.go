@@ -3,7 +3,7 @@ package services
 import (
 	"context"
 
-	"github.com/antoniomiletta/fileman/internal/domain"
+	"github.com/antoniomiletta/fileman/internal/domain/folder"
 	"github.com/antoniomiletta/fileman/internal/ports"
 	"github.com/google/uuid"
 )
@@ -18,8 +18,18 @@ func NewFolderService(repo ports.FolderRepository) *FolderService {
 	}
 }
 
-// Store metadata to db with s.repo.Create()
-func (s *FolderService) Create(ctx context.Context, folder *domain.Folder) error
-func (s *FolderService) ListChildren(ctx context.Context, folderID uuid.UUID) ([]*domain.FolderContent, error)
+func (s *FolderService) Create(ctx context.Context, fol *folder.Folder) error {
+	if fol.Name == "" {
+		return folder.ErrFolderNameRequired
+	}
+
+	if len(fol.Name) > folder.MaxFolderNameLength {
+		return folder.ErrFolderNameTooLong
+	}
+
+	return nil
+}
+
+func (s *FolderService) ListChildren(ctx context.Context, folderID uuid.UUID) ([]*folder.FolderContent, error)
 func (s *FolderService) Move(ctx context.Context, id, newParentID uuid.UUID) error
 func (s *FolderService) Delete(ctx context.Context, id uuid.UUID) error

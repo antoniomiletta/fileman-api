@@ -6,7 +6,7 @@ import (
 
 	"github.com/antoniomiletta/fileman/internal/api/dto"
 	"github.com/antoniomiletta/fileman/internal/api/transport"
-	"github.com/antoniomiletta/fileman/internal/domain"
+	"github.com/antoniomiletta/fileman/internal/domain/auth"
 	"github.com/antoniomiletta/fileman/internal/services"
 )
 
@@ -29,7 +29,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	user := domain.NewUser(domain.NewUserParams{
+	user := auth.NewUser(auth.NewUserParams{
 		Email:    req.Email,
 		Password: req.Password,
 	})

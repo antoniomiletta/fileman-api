@@ -4,8 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/antoniomiletta/fileman/internal/api/dto"
-	"github.com/antoniomiletta/fileman/internal/domain"
+	"github.com/antoniomiletta/fileman/internal/domain/auth"
 	"github.com/antoniomiletta/fileman/internal/pkg/authenticator"
 	"github.com/antoniomiletta/fileman/internal/ports"
 )
@@ -20,24 +19,24 @@ func NewAuthService(repo ports.AuthRepository) *AuthService {
 	}
 }
 
-func (s *AuthService) Register(ctx context.Context, user *domain.User) error {
+func (s *AuthService) Register(ctx context.Context, user *auth.User) error {
 	user.Email = strings.ToLower(strings.TrimSpace(user.Email))
 
 	if user.Email == "" || user.Password == "" {
-		return domain.ErrCredentialsRequired
+		return auth.ErrCredentialsRequired
 	}
 
-	if !dto.IsValidEmail(user.Email) {
-		return domain.ErrInvalidEmail
+	if !auth.IsValidEmail(user.Email) {
+		return auth.ErrInvalidEmail
 	}
 
-	if !dto.IsPasswordStrong(user.Password) {
-		return domain.ErrPasswordTooWeak
+	if !auth.IsPasswordStrong(user.Password) {
+		return auth.ErrPasswordTooWeak
 	}
 
 	existing, _ := s.repo.FindByEmail(ctx, user.Email)
 	if existing != nil {
-		return domain.ErrEmailTaken
+		return auth.ErrEmailTaken
 	}
 
 	user.Password = authenticator.Hash(user.Password)
@@ -53,20 +52,20 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (string
 	email = strings.ToLower(strings.TrimSpace(email))
 
 	if email == "" || password == "" {
-		return "", domain.ErrCredentialsRequired
+		return "", auth.ErrCredentialsRequired
 	}
 
-	if !dto.IsValidEmail(email) {
-		return "", domain.ErrInvalidCredentials
+	if !auth.IsValidEmail(email) {
+		return "", auth.ErrInvalidCredentials
 	}
 
 	user, err := s.repo.FindByEmail(ctx, email)
 	if err != nil || user == nil {
-		return "", domain.ErrInvalidCredentials
+		return "", auth.ErrInvalidCredentials
 	}
 
 	if !authenticator.CompareHash(user.Password, password) {
-		return "", domain.ErrInvalidCredentials
+		return "", auth.ErrInvalidCredentials
 	}
 
 	token, err := s.repo.Login(ctx, email, password)

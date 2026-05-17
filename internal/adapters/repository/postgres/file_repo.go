@@ -3,7 +3,7 @@ package postgres
 import (
 	"context"
 
-	"github.com/antoniomiletta/fileman/internal/domain"
+	"github.com/antoniomiletta/fileman/internal/domain/file"
 	"github.com/google/uuid"
 )
 
@@ -16,6 +16,6 @@ func NewFileRepository(db *DB) *FileRepository {
 }
 
 // sql queries
-func (r *FileRepository) Create(ctx context.Context, file *domain.File) error
+func (r *FileRepository) Create(ctx context.Context, file *file.File) error
 func (r *FileRepository) Move(ctx context.Context, id, newFolderID uuid.UUID) error
 func (r *FileRepository) Delete(ctx context.Context, id uuid.UUID) error

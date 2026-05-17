@@ -6,7 +6,7 @@ import (
 
 	"github.com/antoniomiletta/fileman/internal/api/dto"
 	"github.com/antoniomiletta/fileman/internal/api/transport"
-	"github.com/antoniomiletta/fileman/internal/domain"
+	"github.com/antoniomiletta/fileman/internal/domain/folder"
 	"github.com/antoniomiletta/fileman/internal/pkg/authenticator"
 	"github.com/antoniomiletta/fileman/internal/services"
 	"github.com/google/uuid"
@@ -31,7 +31,7 @@ func (h *FolderHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	folder := domain.NewFolder(domain.NewFolderParams{
+	folder := folder.NewFolder(folder.NewFolderParams{
 		OwnerID:  authenticator.GetIDFromToken(r.Header.Get("Authorization")),
 		ParentID: req.ParentID,
 		Name:     req.Name,
