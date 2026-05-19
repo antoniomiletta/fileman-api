@@ -17,6 +17,7 @@ func NewFolderRepository(db *DB) *FolderRepository {
 
 // sql queries
 func (r *FolderRepository) Create(ctx context.Context, folder *folder.Folder) error
-func (r *FolderRepository) ListChildren(ctx context.Context, folderID uuid.UUID) ([]*folder.Folder, error)
+func (r *FolderRepository) FindByID(ctx context.Context, id uuid.UUID) (*folder.Folder, error)
+func (r *FolderRepository) ListChildren(ctx context.Context, folderID uuid.UUID) (*folder.FolderContent, error)
 func (r *FolderRepository) Move(ctx context.Context, id, newParentID uuid.UUID) error
 func (r *FolderRepository) Delete(ctx context.Context, id uuid.UUID) error
