@@ -4,9 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/antoniomiletta/fileman/internal/domain/auth"
-	"github.com/antoniomiletta/fileman/internal/domain/file"
-	"github.com/antoniomiletta/fileman/internal/domain/folder"
+	"github.com/antoniomiletta/fileman/internal/domain"
 )
 
 type APIError struct {
@@ -14,49 +12,16 @@ type APIError struct {
 	Message string
 }
 
-var errorMap = map[error]int{
-	auth.ErrForbidden:           http.StatusUnauthorized,
-	auth.ErrInvalidToken:        http.StatusUnauthorized,
-	auth.ErrUserNotFound:        http.StatusNotFound,
-	auth.ErrInvalidCredentials:  http.StatusUnauthorized,
-	auth.ErrCredentialsRequired: http.StatusBadRequest,
-	auth.ErrInvalidEmail:        http.StatusBadRequest,
-	auth.ErrEmailTaken:          http.StatusConflict,
-	auth.ErrPasswordTooWeak:     http.StatusBadRequest,
-
-	file.ErrFileNotFound:     http.StatusNotFound,
-	file.ErrFileNameRequired: http.StatusBadRequest,
-	file.ErrFileNameInvalid:  http.StatusBadRequest,
-	file.ErrFileNameConflict: http.StatusConflict,
-	file.ErrFileTooLarge:     http.StatusBadRequest,
-	file.ErrInvalidStatus:    http.StatusBadRequest,
-
-	folder.ErrFolderNotFound:         http.StatusNotFound,
-	folder.ErrFolderNameRequired:     http.StatusBadRequest,
-	folder.ErrFolderNameInvalid:      http.StatusBadRequest,
-	folder.ErrFolderNameConflict:     http.StatusConflict,
-	folder.ErrCannotMoveToDescendant: http.StatusUnprocessableEntity,
-	folder.ErrCannotMoveRootFolder:   http.StatusUnprocessableEntity,
-
-	ErrMalformedJSON: http.StatusBadRequest,
-	ErrInvalidQuery:  http.StatusBadRequest,
+type StatusCarrier interface {
+	Error() string
+	Type() string
 }
 
 func MapError(err error) APIError {
-	if status, exists := errorMap[err]; exists {
+	if carrier, ok := AsType[StatusCarrier](err); ok {
 		return APIError{
 			Message: err.Error(),
-			Status:  status,
-		}
-	}
-
-	// error.Is() for wrapped errors
-	for error, status := range errorMap {
-		if errors.Is(err, error) {
-			return APIError{
-				Message: error.Error(),
-				Status:  status,
-			}
+			Status:  MapHTTPStatus(carrier.Type()),
 		}
 	}
 
@@ -64,4 +29,40 @@ func MapError(err error) APIError {
 		Message: "internal server error",
 		Status:  http.StatusInternalServerError,
 	}
+}
+
+func MapHTTPStatus(errType string) int {
+	switch errType {
+	case domain.ErrorTypeLogical.String():
+		return http.StatusUnprocessableEntity
+
+	case domain.ErrorTypeAuthorization.String():
+		return http.StatusUnauthorized
+
+	case domain.ErrorTypeValidation.String():
+		return http.StatusBadRequest
+
+	case domain.ErrorTypeConflict.String():
+		return http.StatusConflict
+
+	case domain.ErrorTypeRetrieval.String():
+		return http.StatusNotFound
+
+	case ErrorTypeParsing.String():
+		return http.StatusBadRequest
+
+	case ErrorTypeParsing.String():
+		return http.StatusBadRequest
+
+	default:
+		return http.StatusInternalServerError
+	}
+}
+
+func AsType[T any](err error) (T, bool) {
+	var target T
+	if errors.As(err, &target) {
+		return target, true
+	}
+	return target, false
 }

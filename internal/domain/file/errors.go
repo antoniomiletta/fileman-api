@@ -1,13 +1,40 @@
 package file
 
-import "errors"
+import "github.com/antoniomiletta/fileman/internal/domain"
 
 var (
-	ErrFileNotFound     = errors.New("file not found")
-	ErrFileNameRequired = errors.New("file name is required")
-	ErrFileNameInvalid  = errors.New("invalid file name")
-	ErrFileNameTooLong  = errors.New("file name is too long")
-	ErrFileNameConflict = errors.New("file name already exists in target directory")
-	ErrFileTooLarge     = errors.New("file is too large")
-	ErrInvalidStatus    = errors.New("invalid status transition")
+	ErrFileNotFound = domain.DomainError{
+		Msg: "file not found",
+		Typ: domain.ErrorTypeRetrieval,
+	}
+
+	ErrFileNameRequired = domain.DomainError{
+		Msg: "file name is required",
+		Typ: domain.ErrorTypeValidation,
+	}
+
+	ErrFileNameInvalid = domain.DomainError{
+		Msg: "invalid file name",
+		Typ: domain.ErrorTypeValidation,
+	}
+
+	ErrFileNameTooLong = domain.DomainError{
+		Msg: "file name is too long",
+		Typ: domain.ErrorTypeValidation,
+	}
+
+	ErrFileNameConflict = domain.DomainError{
+		Msg: "file name already exists in target directory",
+		Typ: domain.ErrorTypeConflict,
+	}
+
+	ErrFileTooLarge = domain.DomainError{
+		Msg: "file is too large",
+		Typ: domain.ErrorTypeValidation,
+	}
+
+	ErrInvalidStatus = domain.DomainError{
+		Msg: "invalid status transition",
+		Typ: domain.ErrorTypeLogical,
+	}
 )

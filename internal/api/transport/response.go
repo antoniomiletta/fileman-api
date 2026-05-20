@@ -17,12 +17,12 @@ func WriteStatus(w http.ResponseWriter, status int) {
 }
 
 func WriteError(w http.ResponseWriter, err error) {
-	error := MapError(err)
+	mapped := MapError(err)
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(error.Status)
+	w.WriteHeader(mapped.Status)
 
 	json.NewEncoder(w).Encode(map[string]string{
-		"error": error.Message,
+		"error": mapped.Message,
 	})
 }

@@ -4,7 +4,9 @@ import (
 	"context"
 	"strings"
 
+	"github.com/antoniomiletta/fileman/internal/domain/auth"
 	"github.com/antoniomiletta/fileman/internal/domain/folder"
+	"github.com/antoniomiletta/fileman/internal/pkg/reqctx"
 	"github.com/antoniomiletta/fileman/internal/ports"
 	"github.com/google/uuid"
 )
@@ -39,10 +41,41 @@ func (s *FolderService) ListChildren(ctx context.Context, folderID uuid.UUID) (*
 		return nil, folder.ErrFolderNotFound
 	}
 
-	// TODO: ownderID
+	callerID, err := reqctx.CallerIDFrom(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-	return &folder.FolderContent{}, nil
+	if callerID != fol.OwnerID {
+		return nil, auth.ErrForbidden
+	}
+
+	content, err := s.repo.ListChildren(ctx, folderID)
+	if err != nil {
+		return nil, err
+	}
+
+	return content, nil
 }
 
-func (s *FolderService) Move(ctx context.Context, id, newParentID uuid.UUID) error
+func (s *FolderService) Move(ctx context.Context, id, newParentID uuid.UUID) error {
+	fol, err := s.repo.FindByID(ctx, id)
+	if err != nil || fol == nil {
+		return folder.ErrFolderNotFound
+	}
+
+	if fol.ParentID == nil {
+		return folder.ErrCannotMoveRootFolder
+	}
+
+	if *fol.ParentID == newParentID {
+		return folder.ErrAlreadyInDestination
+	}
+
+	if id == newParentID {
+	}
+
+	return nil
+}
+
 func (s *FolderService) Delete(ctx context.Context, id uuid.UUID) error
