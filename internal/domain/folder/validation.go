@@ -2,42 +2,33 @@ package folder
 
 import (
 	"fmt"
-	"regexp"
-	"strings"
-)
 
-var (
-	// Windows/Linux/macOS forbidden characters and control characters
-	illegalCharsRegex = regexp.MustCompile(`[<>:"/\\|?*%\x00-\x1F]`)
-	// Windows reserved system names
-	reservedNamesRegex = regexp.MustCompile(`(?i)^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(\..*)?$`)
+	"github.com/antoniomiletta/fileman/internal/pkg/fsvalidator"
 )
 
 func ValidateFolderName(name string) error {
-	if name == "" {
-		return ErrFolderNameRequired
-	}
+	reason, ok := fsvalidator.ValidateName(name)
+	if !ok {
+		switch reason {
+		case fsvalidator.ErrorTypeRequired:
+			return ErrFolderNameRequired
 
-	if len(name) > MaxFolderNameLength {
-		return fmt.Errorf("%w: name cannot be longer than 255 characters", ErrFolderNameTooLong)
-	}
+		case fsvalidator.ErrorTypeTooLong:
+			return fmt.Errorf("%w: name cannot be longer than 255 characters", ErrFolderNameTooLong)
 
-	if illegalCharsRegex.MatchString(name) {
-		return fmt.Errorf("%w: name cannot contain control characters", ErrFolderNameInvalid)
-	}
+		case fsvalidator.ErrorTypePathTraversal:
+			return fmt.Errorf("%w: name cannot contain path structures", ErrFolderNameInvalid)
 
-	if reservedNamesRegex.MatchString(name) {
-		return fmt.Errorf("%w: \"%s\" is a reserved system name", ErrFolderNameInvalid, name)
-	}
+		case fsvalidator.ErrorTypeIllegalChars:
+			return fmt.Errorf("%w: name cannot contain control characters", ErrFolderNameInvalid)
 
-	if strings.HasSuffix(name, ".") {
-		return fmt.Errorf("%w: name cannot end with a period", ErrFolderNameInvalid)
-	}
+		case fsvalidator.ErrorTypeReservedName:
+			return fmt.Errorf("%w: \"%s\" is a reserved system name", ErrFolderNameInvalid, name)
 
-	if name == "." || name == ".." {
-		return fmt.Errorf("%w: folder name cannot be \"%s\"", ErrFolderNameInvalid, name)
+		case fsvalidator.ErrorTypeIllegalTrailling:
+			return fmt.Errorf("%w: name cannot end with a period or space", ErrFolderNameInvalid)
+		}
 	}
 
 	return nil
 }
-

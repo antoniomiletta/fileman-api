@@ -59,23 +59,89 @@ func (s *FolderService) ListChildren(ctx context.Context, folderID uuid.UUID) (*
 }
 
 func (s *FolderService) Move(ctx context.Context, id, newParentID uuid.UUID) error {
+	callerID, err := reqctx.CallerIDFrom(ctx)
+	if err != nil {
+		return err
+	}
+
 	fol, err := s.repo.FindByID(ctx, id)
 	if err != nil || fol == nil {
 		return folder.ErrFolderNotFound
 	}
 
-	if fol.ParentID == nil {
-		return folder.ErrCannotMoveRootFolder
+	if callerID != fol.OwnerID {
+		return auth.ErrForbidden
 	}
 
 	if *fol.ParentID == newParentID {
 		return folder.ErrAlreadyInDestination
 	}
 
+	if fol.ParentID == nil {
+		return folder.ErrCannotMoveRootFolder
+	}
+
 	if id == newParentID {
+		return folder.ErrCannotMoveIntoItself
+	}
+
+	dest, err := s.repo.FindByID(ctx, newParentID)
+	if err != nil || dest == nil {
+		return folder.ErrFolderNotFound
+	}
+
+	if callerID != dest.OwnerID {
+		return auth.ErrForbidden
+	}
+
+	ancestor := dest
+	for ancestor.ParentID != nil {
+		if *ancestor.ParentID == id {
+			return folder.ErrCannotMoveIntoDescendant
+		}
+
+		ancestor, err = s.repo.FindByID(ctx, *ancestor.ParentID)
+		if err != nil {
+			return folder.ErrFolderNotFound
+		}
+	}
+
+	clash, _ := s.repo.FindByNameInParent(ctx, fol.Name, newParentID)
+	if clash != nil && clash.ID != id {
+		return folder.ErrFolderNameConflict
+	}
+
+	if err := s.repo.Move(ctx, id, newParentID); err != nil {
+		return err
 	}
 
 	return nil
 }
 
-func (s *FolderService) Delete(ctx context.Context, id uuid.UUID) error
+func (s *FolderService) Delete(ctx context.Context, id uuid.UUID) error {
+	callerID, err := reqctx.CallerIDFrom(ctx)
+	if err != nil {
+		return err
+	}
+
+	fol, err := s.repo.FindByID(ctx, id)
+	if err != nil || fol == nil {
+		return folder.ErrFolderNotFound
+	}
+
+	if callerID != fol.OwnerID {
+		return auth.ErrForbidden
+	}
+
+	if fol.ParentID == nil {
+		return folder.ErrCannotDeleteRootFolder
+	}
+
+	// TODO: handle non empty folders (delete recursevely)
+
+	if err := s.repo.Delete(ctx, id); err != nil {
+		return err
+	}
+
+	return nil
+}

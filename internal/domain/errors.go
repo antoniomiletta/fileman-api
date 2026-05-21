@@ -21,6 +21,6 @@ func (e DomainError) Error() string {
 	return e.Msg
 }
 
-func (e DomainError) Type() ErrorType {
-	return e.Typ
+func (e DomainError) Type() string {
+	return e.Typ.String()
 }

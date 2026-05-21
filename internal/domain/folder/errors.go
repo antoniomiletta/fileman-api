@@ -47,4 +47,9 @@ var (
 		Msg: "root folder cannot be moved",
 		Typ: domain.ErrorTypeLogical,
 	}
+
+	ErrCannotDeleteRootFolder = domain.DomainError{
+		Msg: "root folder cannot be deleted",
+		Typ: domain.ErrorTypeLogical,
+	}
 )

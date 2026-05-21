@@ -23,8 +23,9 @@ type FileRepository interface {
 
 type FolderRepository interface {
 	Create(ctx context.Context, folder *folder.Folder) error
-	FindByID(ctx context.Context, id uuid.UUID) (*folder.Folder, error)
 	ListChildren(ctx context.Context, folderID uuid.UUID) (*folder.FolderContent, error)
 	Move(ctx context.Context, id, newParentID uuid.UUID) error
 	Delete(ctx context.Context, id uuid.UUID) error
+	FindByID(ctx context.Context, id uuid.UUID) (*folder.Folder, error)
+	FindByNameInParent(ctx context.Context, name string, parentID uuid.UUID) (*folder.Folder, error)
 }

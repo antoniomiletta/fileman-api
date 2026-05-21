@@ -47,7 +47,7 @@ func (h *FolderHandler) Create(w http.ResponseWriter, r *http.Request) {
 func (h *FolderHandler) ListChildren(w http.ResponseWriter, r *http.Request) {
 	folderID, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
-		transport.WriteError(w, transport.ErrInvalidQuery)
+		transport.WriteError(w, transport.ErrInvalidPathParam)
 	}
 
 	content, err := h.svc.ListChildren(r.Context(), folderID)
@@ -61,7 +61,7 @@ func (h *FolderHandler) ListChildren(w http.ResponseWriter, r *http.Request) {
 func (h *FolderHandler) Move(w http.ResponseWriter, r *http.Request) {
 	folderID, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
-		transport.WriteError(w, transport.ErrInvalidQuery)
+		transport.WriteError(w, transport.ErrInvalidPathParam)
 	}
 
 	var newParentIdStr string

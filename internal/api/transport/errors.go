@@ -17,8 +17,8 @@ func (e TransportError) Error() string {
 	return e.msg
 }
 
-func (e TransportError) Type() ErrorType {
-	return e.typ
+func (e TransportError) Type() string {
+	return e.typ.String()
 }
 
 var (
