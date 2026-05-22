@@ -6,7 +6,6 @@ import (
 
 type CreateFileRequest struct {
 	ParentID *uuid.UUID `json:"parent_id"`
-	Name     string     `json:"name"`
 }
 
 type MoveFileRequest struct {

@@ -1,19 +1,8 @@
-package fsvalidator
+package filesys
 
 import (
 	"path/filepath"
 	"strings"
-)
-
-type FSValidationError string
-
-const (
-	ErrorTypeRequired         FSValidationError = "REQUIRED"
-	ErrorTypeTooLong          FSValidationError = "TOO_LONG"
-	ErrorTypePathTraversal    FSValidationError = "PATH_TRAVERSAL"
-	ErrorTypeIllegalChars     FSValidationError = "ILLEGAL_CHARS"
-	ErrorTypeReservedName     FSValidationError = "RESERVED_NAME"
-	ErrorTypeIllegalTrailling FSValidationError = "ILLEGAL_TRAILLING"
 )
 
 func ValidateName(name string) (FSValidationError, bool) {

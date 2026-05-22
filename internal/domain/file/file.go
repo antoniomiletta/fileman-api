@@ -18,7 +18,7 @@ type File struct {
 	OwnerID     uuid.UUID
 	ParentID    *uuid.UUID
 	Name        string
-	Extension   string
+	MIMEType    string
 	Size        int64
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
@@ -27,11 +27,11 @@ type File struct {
 }
 
 type NewFileParams struct {
-	OwnerID   uuid.UUID
-	ParentID  *uuid.UUID
-	Name      string
-	Extension string
-	Size      int64
+	OwnerID  uuid.UUID
+	ParentID *uuid.UUID
+	Name     string
+	MIMEType string
+	Size     int64
 }
 
 func NewFile(p NewFileParams) File {
@@ -40,7 +40,7 @@ func NewFile(p NewFileParams) File {
 		OwnerID:     p.OwnerID,
 		ParentID:    p.ParentID,
 		Name:        p.Name,
-		Extension:   p.Extension,
+		MIMEType:    p.MIMEType,
 		Size:        p.Size,
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),

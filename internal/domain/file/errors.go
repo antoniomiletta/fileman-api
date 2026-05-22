@@ -33,6 +33,11 @@ var (
 		Typ: domain.ErrorTypeValidation,
 	}
 
+	ErrFileTypeNotAllowed = domain.DomainError{
+		Msg: "this file type is not allowed",
+		Typ: domain.ErrorTypeValidation,
+	}
+
 	ErrInvalidStatus = domain.DomainError{
 		Msg: "invalid status transition",
 		Typ: domain.ErrorTypeLogical,
