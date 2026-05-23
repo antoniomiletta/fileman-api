@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"strings"
+	"time"
 
 	"github.com/antoniomiletta/fileman/internal/domain/auth"
 	"github.com/antoniomiletta/fileman/internal/domain/folder"
@@ -33,11 +34,14 @@ func (s *FolderService) CreateFolder(ctx context.Context, input CreateFolderInpu
 		return err
 	}
 
-	fol := folder.NewFolder(folder.NewFolderParams{
-		OwnerID:  input.OwnerID,
-		ParentID: input.ParentID,
-		Name:     strings.TrimSpace(input.Name),
-	})
+	fol := folder.Folder{
+		ID:        uuid.New(),
+		OwnerID:   input.OwnerID,
+		ParentID:  input.ParentID,
+		Name:      strings.TrimSpace(input.Name),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
 
 	if err := s.repo.Create(ctx, &fol); err != nil {
 		return err

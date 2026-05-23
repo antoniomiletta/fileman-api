@@ -60,7 +60,7 @@ func (s *FileService) CreateFile(ctx context.Context, input CreateFileInput, con
 		return file.ErrFileNameConflict
 	}
 
-	fil := file.NewFile(file.NewFileParams{
+	fil := file.File{
 		OwnerID:  input.OwnerID,
 		ParentID: input.ParentID,
 		Name:     input.Name,
@@ -71,9 +71,8 @@ func (s *FileService) CreateFile(ctx context.Context, input CreateFileInput, con
 			ResourceType: storage.ResourceTypeFrom(input.MIMEType),
 			Filename:     input.Name,
 		}),
-	})
+	}
 
-	// TODO: build StoragePath and pass as key
 	if err := s.storage.Upload(ctx, fil.StorageKey, content, fil.Size); err != nil {
 		return err
 	}

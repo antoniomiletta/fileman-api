@@ -44,11 +44,11 @@ func (s *AuthService) CreateUser(ctx context.Context, input CreateUserInput) err
 		return auth.ErrEmailTaken
 	}
 
-	user := auth.NewUser(auth.NewUserParams{
+	user := auth.User{
 		ID:       uuid.New(),
 		Email:    strings.ToLower(strings.TrimSpace(input.Email)),
 		Password: authenticator.Hash(input.Password),
-	})
+	}
 
 	if err := s.repo.Register(ctx, &user); err != nil {
 		return err
