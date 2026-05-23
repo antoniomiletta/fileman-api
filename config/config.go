@@ -21,8 +21,8 @@ type DatabaseConfig struct {
 }
 
 type StorageConfig struct {
-	Backend          string
-	LocalStoragePath string
+	Backend  string
+	S3Bucket string
 }
 
 type AuthConfig struct {

@@ -6,7 +6,6 @@ import (
 
 	"github.com/antoniomiletta/fileman/internal/api/dto"
 	"github.com/antoniomiletta/fileman/internal/api/transport"
-	"github.com/antoniomiletta/fileman/internal/domain/file"
 	"github.com/antoniomiletta/fileman/internal/pkg/authenticator"
 	"github.com/antoniomiletta/fileman/internal/pkg/filesys"
 	"github.com/antoniomiletta/fileman/internal/services"
@@ -44,15 +43,13 @@ func (h *FileHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	defer fileContent.Close()
 
-	file := file.NewFile(file.NewFileParams{
+	if err := h.svc.CreateFile(r.Context(), services.CreateFileInput{
 		OwnerID:  authenticator.GetIDFromToken(r.Header.Get("Authorization")),
 		ParentID: req.ParentID,
 		Name:     fileHeader.Filename,
 		MIMEType: filesys.DetectMIME(fileContent),
 		Size:     fileHeader.Size,
-	})
-
-	if err := h.svc.Create(r.Context(), &file, fileContent); err != nil {
+	}, fileContent); err != nil {
 		transport.WriteError(w, err)
 	}
 
@@ -76,7 +73,7 @@ func (h *FileHandler) Move(w http.ResponseWriter, r *http.Request) {
 		transport.WriteError(w, transport.ErrMalformedToken)
 	}
 
-	if err := h.svc.Move(r.Context(), fileID, newParentID); err != nil {
+	if err := h.svc.MoveFile(r.Context(), fileID, newParentID); err != nil {
 		transport.WriteError(w, err)
 	}
 }
@@ -87,7 +84,7 @@ func (h *FileHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		transport.WriteError(w, err)
 	}
 
-	if err := h.svc.Delete(r.Context(), fileID); err != nil {
+	if err := h.svc.DeleteFile(r.Context(), fileID); err != nil {
 		transport.WriteError(w, err)
 	}
 }

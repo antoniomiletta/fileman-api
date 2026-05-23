@@ -14,15 +14,22 @@ type Server struct {
 	FolderSvc  *services.FolderService
 }
 
-func NewServer(authSvc *services.AuthService, fileSvc *services.FileService, folderSvc *services.FolderService, cfg config.ServerConfig) *Server {
+type NewServerInput struct {
+	AuthSvc   *services.AuthService
+	FolderSvc *services.FolderService
+	FileSvc   *services.FileService
+	Cfg       config.ServerConfig
+}
+
+func NewServer(input NewServerInput) *Server {
 	s := &Server{
-		AuthSvc:   authSvc,
-		FileSvc:   fileSvc,
-		FolderSvc: folderSvc,
+		AuthSvc:   input.AuthSvc,
+		FolderSvc: input.FolderSvc,
+		FileSvc:   input.FileSvc,
 	}
 
 	s.HttpServer = &http.Server{
-		Addr:    ":" + cfg.Port,
+		Addr:    ":" + input.Cfg.Port,
 		Handler: s.Router(),
 	}
 

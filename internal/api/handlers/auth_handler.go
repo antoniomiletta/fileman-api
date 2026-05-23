@@ -6,7 +6,6 @@ import (
 
 	"github.com/antoniomiletta/fileman/internal/api/dto"
 	"github.com/antoniomiletta/fileman/internal/api/transport"
-	"github.com/antoniomiletta/fileman/internal/domain/auth"
 	"github.com/antoniomiletta/fileman/internal/services"
 )
 
@@ -29,12 +28,10 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	user := auth.NewUser(auth.NewUserParams{
+	if err := h.svc.CreateUser(r.Context(), services.CreateUserInput{
 		Email:    req.Email,
 		Password: req.Password,
-	})
-
-	if err := h.svc.Register(r.Context(), &user); err != nil {
+	}); err != nil {
 		transport.WriteError(w, err)
 		return
 	}

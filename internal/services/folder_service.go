@@ -21,14 +21,25 @@ func NewFolderService(repo ports.FolderRepository) *FolderService {
 	}
 }
 
-func (s *FolderService) Create(ctx context.Context, fol *folder.Folder) error {
-	fol.Name = strings.TrimSpace(fol.Name)
+type CreateFolderInput struct {
+	OwnerID  uuid.UUID
+	ParentID *uuid.UUID
+	Name     string
+}
 
-	if err := folder.ValidateFolderName(fol.Name); err != nil {
+func (s *FolderService) CreateFolder(ctx context.Context, input CreateFolderInput) error {
+
+	if err := folder.ValidateFolderName(input.Name); err != nil {
 		return err
 	}
 
-	if err := s.repo.Create(ctx, fol); err != nil {
+	fol := folder.NewFolder(folder.NewFolderParams{
+		OwnerID:  input.OwnerID,
+		ParentID: input.ParentID,
+		Name:     strings.TrimSpace(input.Name),
+	})
+
+	if err := s.repo.Create(ctx, &fol); err != nil {
 		return err
 	}
 
@@ -36,14 +47,14 @@ func (s *FolderService) Create(ctx context.Context, fol *folder.Folder) error {
 }
 
 func (s *FolderService) ListChildren(ctx context.Context, folderID uuid.UUID) (*folder.FolderContent, error) {
-	fol, err := s.repo.FindByID(ctx, folderID)
-	if err != nil || fol == nil {
-		return nil, folder.ErrFolderNotFound
-	}
-
 	callerID, err := reqctx.CallerIDFrom(ctx)
 	if err != nil {
 		return nil, err
+	}
+
+	fol, err := s.repo.FindByID(ctx, folderID)
+	if err != nil || fol == nil {
+		return nil, folder.ErrFolderNotFound
 	}
 
 	if callerID != fol.OwnerID {
@@ -107,7 +118,7 @@ func (s *FolderService) Move(ctx context.Context, id, newParentID uuid.UUID) err
 	}
 
 	clash, _ := s.repo.FindByNameInParent(ctx, fol.Name, newParentID)
-	if clash != nil && clash.ID != id {
+	if clash != nil {
 		return folder.ErrFolderNameConflict
 	}
 

@@ -7,6 +7,7 @@ import (
 	"github.com/antoniomiletta/fileman/internal/domain/auth"
 	"github.com/antoniomiletta/fileman/internal/pkg/authenticator"
 	"github.com/antoniomiletta/fileman/internal/ports"
+	"github.com/google/uuid"
 )
 
 type AuthService struct {
@@ -19,29 +20,37 @@ func NewAuthService(repo ports.AuthRepository) *AuthService {
 	}
 }
 
-func (s *AuthService) Register(ctx context.Context, user *auth.User) error {
-	user.Email = strings.ToLower(strings.TrimSpace(user.Email))
+type CreateUserInput struct {
+	Email    string
+	Password string
+}
 
-	if user.Email == "" || user.Password == "" {
+func (s *AuthService) CreateUser(ctx context.Context, input CreateUserInput) error {
+
+	if input.Email == "" || input.Password == "" {
 		return auth.ErrCredentialsRequired
 	}
 
-	if !auth.IsValidEmail(user.Email) {
+	if !auth.IsValidEmail(input.Email) {
 		return auth.ErrInvalidEmail
 	}
 
-	if !auth.IsPasswordStrong(user.Password) {
+	if !auth.IsPasswordStrong(input.Password) {
 		return auth.ErrPasswordTooWeak
 	}
 
-	existing, _ := s.repo.FindByEmail(ctx, user.Email)
+	existing, _ := s.repo.FindByEmail(ctx, input.Email)
 	if existing != nil {
 		return auth.ErrEmailTaken
 	}
 
-	user.Password = authenticator.Hash(user.Password)
+	user := auth.NewUser(auth.NewUserParams{
+		ID:       uuid.New(),
+		Email:    strings.ToLower(strings.TrimSpace(input.Email)),
+		Password: authenticator.Hash(input.Password),
+	})
 
-	if err := s.repo.Register(ctx, user); err != nil {
+	if err := s.repo.Register(ctx, &user); err != nil {
 		return err
 	}
 

@@ -19,6 +19,7 @@ type FileRepository interface {
 	Create(ctx context.Context, file *file.File) error
 	Move(ctx context.Context, id, newFolderID uuid.UUID) error
 	Delete(ctx context.Context, id uuid.UUID) error
+	FindByNameInParent(ctx context.Context, name string, parentID uuid.UUID) (*file.File, error)
 }
 
 type FolderRepository interface {

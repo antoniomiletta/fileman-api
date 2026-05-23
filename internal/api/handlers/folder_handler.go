@@ -6,7 +6,6 @@ import (
 
 	"github.com/antoniomiletta/fileman/internal/api/dto"
 	"github.com/antoniomiletta/fileman/internal/api/transport"
-	"github.com/antoniomiletta/fileman/internal/domain/folder"
 	"github.com/antoniomiletta/fileman/internal/pkg/authenticator"
 	"github.com/antoniomiletta/fileman/internal/services"
 	"github.com/google/uuid"
@@ -31,13 +30,11 @@ func (h *FolderHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	folder := folder.NewFolder(folder.NewFolderParams{
+	if err := h.svc.CreateFolder(r.Context(), services.CreateFolderInput{
 		OwnerID:  authenticator.GetIDFromToken(r.Header.Get("Authorization")),
 		ParentID: req.ParentID,
 		Name:     req.Name,
-	})
-
-	if err := h.svc.Create(r.Context(), &folder); err != nil {
+	}); err != nil {
 		transport.WriteError(w, err)
 	}
 
