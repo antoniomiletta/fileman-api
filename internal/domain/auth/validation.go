@@ -2,10 +2,13 @@ package auth
 
 import (
 	"net/mail"
+	"strings"
 	"unicode"
 )
 
 func IsValidEmail(email string) bool {
+	email = strings.ToLower(strings.TrimSpace(email))
+
 	_, err := mail.ParseAddress(email)
 	return err == nil
 }

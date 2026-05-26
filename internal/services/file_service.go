@@ -2,12 +2,14 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"strings"
 
 	"github.com/antoniomiletta/fileman/internal/domain/auth"
 	"github.com/antoniomiletta/fileman/internal/domain/file"
 	"github.com/antoniomiletta/fileman/internal/domain/folder"
+	"github.com/antoniomiletta/fileman/internal/pkg/reqctx"
 	"github.com/antoniomiletta/fileman/internal/pkg/storage"
 	"github.com/antoniomiletta/fileman/internal/ports"
 	"github.com/google/uuid"
@@ -35,9 +37,7 @@ type CreateFileInput struct {
 	Size     int64
 }
 
-func (s *FileService) CreateFile(ctx context.Context, input CreateFileInput, content io.Reader) error {
-	input.Name = strings.TrimSpace(input.Name)
-
+func (s *FileService) CreateFile(ctx context.Context, input CreateFileInput, fileContent io.Reader) error {
 	if err := file.ValidateFileName(input.Name); err != nil {
 		return err
 	}
@@ -46,13 +46,15 @@ func (s *FileService) CreateFile(ctx context.Context, input CreateFileInput, con
 		return file.ErrFileTypeNotAllowed
 	}
 
-	parent, err := s.folderRepo.FindByID(ctx, *input.ParentID)
-	if err != nil || parent == nil {
-		return folder.ErrFolderNotFound
-	}
+	if input.ParentID != nil {
+		parent, err := s.folderRepo.FindByID(ctx, *input.ParentID)
+		if err != nil {
+			return fmt.Errorf("%w: specified parent does not exist", folder.ErrFolderNotFound)
+		}
 
-	if parent.OwnerID != input.OwnerID {
-		return auth.ErrForbidden
+		if parent.OwnerID != input.OwnerID {
+			return fmt.Errorf("%w: cannot create on specified parent", auth.ErrForbidden)
+		}
 	}
 
 	clash, _ := s.fileRepo.FindByNameInParent(ctx, input.Name, *input.ParentID)
@@ -63,7 +65,7 @@ func (s *FileService) CreateFile(ctx context.Context, input CreateFileInput, con
 	fil := file.File{
 		OwnerID:  input.OwnerID,
 		ParentID: input.ParentID,
-		Name:     input.Name,
+		Name:     strings.TrimSpace(input.Name),
 		MIMEType: input.MIMEType,
 		Size:     input.Size,
 		StorageKey: storage.GenerateFileKey(storage.FileKeyParams{
@@ -73,7 +75,7 @@ func (s *FileService) CreateFile(ctx context.Context, input CreateFileInput, con
 		}),
 	}
 
-	if err := s.storage.Upload(ctx, fil.StorageKey, content, fil.Size); err != nil {
+	if err := s.storage.Upload(ctx, fil.StorageKey, fileContent, fil.Size); err != nil {
 		return err
 	}
 
@@ -84,5 +86,62 @@ func (s *FileService) CreateFile(ctx context.Context, input CreateFileInput, con
 	return nil
 }
 
-func (s *FileService) MoveFile(ctx context.Context, id, newFolderID uuid.UUID) error
-func (s *FileService) DeleteFile(ctx context.Context, id uuid.UUID) error
+func (s *FileService) MoveFile(ctx context.Context, id, newParentID uuid.UUID) error {
+	callerID, err := reqctx.CallerIDFrom(ctx)
+	if err != nil {
+		return err
+	}
+
+	fil, err := s.fileRepo.FindByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	if callerID != fil.OwnerID {
+		return fmt.Errorf("%w: cannot move this file", auth.ErrForbidden)
+	}
+
+	if *fil.ParentID == newParentID {
+		return folder.ErrAlreadyInDestination
+	}
+
+	dest, err := s.folderRepo.FindByID(ctx, newParentID)
+	if err != nil {
+		return err
+	}
+
+	if callerID != dest.OwnerID {
+		return fmt.Errorf("%w: cannot move into specified folder", auth.ErrForbidden)
+	}
+
+	clash, _ := s.fileRepo.FindByNameInParent(ctx, fil.Name, newParentID)
+	if clash != nil {
+		return file.ErrFileNameConflict
+	}
+
+	if err := s.fileRepo.Move(ctx, id, newParentID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *FileService) DeleteFile(ctx context.Context, id uuid.UUID) error {
+	callerID, err := reqctx.CallerIDFrom(ctx)
+	if err != nil {
+		return err
+	}
+
+	fil, err := s.fileRepo.FindByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	if callerID != fil.OwnerID {
+		return fmt.Errorf("%w: cannot delete this file", auth.ErrForbidden)
+	}
+
+	s.fileRepo.Delete(ctx, id)
+
+	return nil
+}

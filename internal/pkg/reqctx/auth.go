@@ -2,6 +2,7 @@ package reqctx
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/antoniomiletta/fileman/internal/domain/auth"
 	"github.com/google/uuid"
@@ -9,7 +10,7 @@ import (
 
 type contextKey string
 
-const callerIDKey contextKey = "callerID"
+const callerIDKey contextKey = "CALLER_ID"
 
 func WithCallerID(ctx context.Context, callerID uuid.UUID) context.Context {
 	return context.WithValue(ctx, callerIDKey, callerID)
@@ -18,7 +19,7 @@ func WithCallerID(ctx context.Context, callerID uuid.UUID) context.Context {
 func CallerIDFrom(ctx context.Context) (uuid.UUID, error) {
 	id, ok := ctx.Value(callerIDKey).(uuid.UUID)
 	if !ok {
-		return uuid.UUID{}, auth.ErrUnauthenticated
+		return uuid.UUID{}, fmt.Errorf("%w: missing token", auth.ErrUnauthenticated)
 	}
 
 	return id, nil

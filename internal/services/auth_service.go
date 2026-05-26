@@ -26,7 +26,6 @@ type CreateUserInput struct {
 }
 
 func (s *AuthService) CreateUser(ctx context.Context, input CreateUserInput) error {
-
 	if input.Email == "" || input.Password == "" {
 		return auth.ErrCredentialsRequired
 	}

@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -29,9 +30,26 @@ type CreateFolderInput struct {
 }
 
 func (s *FolderService) CreateFolder(ctx context.Context, input CreateFolderInput) error {
+	input.Name = strings.ToLower(strings.TrimSpace(input.Name))
 
 	if err := folder.ValidateFolderName(input.Name); err != nil {
 		return err
+	}
+
+	if input.ParentID != nil {
+		parent, err := s.repo.FindByID(ctx, *input.ParentID)
+		if err != nil {
+			return fmt.Errorf("%w: specified parent does not exist", err)
+		}
+
+		if parent.OwnerID != input.OwnerID {
+			return fmt.Errorf("%w: cannot create on specified parent", auth.ErrForbidden)
+		}
+	}
+
+	clash, _ := s.repo.FindByNameInParent(ctx, input.Name, *input.ParentID)
+	if clash != nil {
+		return folder.ErrFolderNameConflict
 	}
 
 	fol := folder.Folder{
@@ -57,12 +75,12 @@ func (s *FolderService) ListChildren(ctx context.Context, folderID uuid.UUID) (*
 	}
 
 	fol, err := s.repo.FindByID(ctx, folderID)
-	if err != nil || fol == nil {
-		return nil, folder.ErrFolderNotFound
+	if err != nil {
+		return nil, err
 	}
 
 	if callerID != fol.OwnerID {
-		return nil, auth.ErrForbidden
+		return nil, fmt.Errorf("%w: cannot access contents of specified folder", auth.ErrForbidden)
 	}
 
 	content, err := s.repo.ListChildren(ctx, folderID)
@@ -73,19 +91,19 @@ func (s *FolderService) ListChildren(ctx context.Context, folderID uuid.UUID) (*
 	return content, nil
 }
 
-func (s *FolderService) Move(ctx context.Context, id, newParentID uuid.UUID) error {
+func (s *FolderService) MoveFolder(ctx context.Context, id, newParentID uuid.UUID) error {
 	callerID, err := reqctx.CallerIDFrom(ctx)
 	if err != nil {
 		return err
 	}
 
 	fol, err := s.repo.FindByID(ctx, id)
-	if err != nil || fol == nil {
-		return folder.ErrFolderNotFound
+	if err != nil {
+		return err
 	}
 
 	if callerID != fol.OwnerID {
-		return auth.ErrForbidden
+		return fmt.Errorf("%w: cannot move this folder", auth.ErrForbidden)
 	}
 
 	if *fol.ParentID == newParentID {
@@ -101,12 +119,12 @@ func (s *FolderService) Move(ctx context.Context, id, newParentID uuid.UUID) err
 	}
 
 	dest, err := s.repo.FindByID(ctx, newParentID)
-	if err != nil || dest == nil {
-		return folder.ErrFolderNotFound
+	if err != nil {
+		return err
 	}
 
 	if callerID != dest.OwnerID {
-		return auth.ErrForbidden
+		return fmt.Errorf("%w: cannot move into specified folder", auth.ErrForbidden)
 	}
 
 	ancestor := dest
@@ -117,7 +135,7 @@ func (s *FolderService) Move(ctx context.Context, id, newParentID uuid.UUID) err
 
 		ancestor, err = s.repo.FindByID(ctx, *ancestor.ParentID)
 		if err != nil {
-			return folder.ErrFolderNotFound
+			return err
 		}
 	}
 
@@ -133,19 +151,19 @@ func (s *FolderService) Move(ctx context.Context, id, newParentID uuid.UUID) err
 	return nil
 }
 
-func (s *FolderService) Delete(ctx context.Context, id uuid.UUID) error {
+func (s *FolderService) DeleteFolder(ctx context.Context, id uuid.UUID) error {
 	callerID, err := reqctx.CallerIDFrom(ctx)
 	if err != nil {
 		return err
 	}
 
 	fol, err := s.repo.FindByID(ctx, id)
-	if err != nil || fol == nil {
-		return folder.ErrFolderNotFound
+	if err != nil {
+		return err
 	}
 
 	if callerID != fol.OwnerID {
-		return auth.ErrForbidden
+		return fmt.Errorf("%w: cannot delete this folder", auth.ErrForbidden)
 	}
 
 	if fol.ParentID == nil {

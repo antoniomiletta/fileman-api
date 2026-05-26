@@ -59,7 +59,7 @@ func (h *FileHandler) Create(w http.ResponseWriter, r *http.Request) {
 func (h *FileHandler) Move(w http.ResponseWriter, r *http.Request) {
 	fileID, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
-		transport.WriteError(w, transport.ErrMalformedToken)
+		transport.WriteError(w, transport.ErrInvalidPathParam)
 	}
 
 	var newParentIdStr string
@@ -81,7 +81,7 @@ func (h *FileHandler) Move(w http.ResponseWriter, r *http.Request) {
 func (h *FileHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	fileID, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
-		transport.WriteError(w, err)
+		transport.WriteError(w, transport.ErrInvalidPathParam)
 	}
 
 	if err := h.svc.DeleteFile(r.Context(), fileID); err != nil {

@@ -17,8 +17,9 @@ type AuthRepository interface {
 
 type FileRepository interface {
 	Create(ctx context.Context, file *file.File) error
-	Move(ctx context.Context, id, newFolderID uuid.UUID) error
+	Move(ctx context.Context, id, newParentID uuid.UUID) error
 	Delete(ctx context.Context, id uuid.UUID) error
+	FindByID(ctx context.Context, id uuid.UUID) (*file.File, error)
 	FindByNameInParent(ctx context.Context, name string, parentID uuid.UUID) (*file.File, error)
 }
 

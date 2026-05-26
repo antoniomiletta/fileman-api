@@ -17,6 +17,7 @@ func NewFileRepository(db *DB) *FileRepository {
 
 // sql queries
 func (r *FileRepository) Create(ctx context.Context, file *file.File) error
-func (r *FileRepository) Move(ctx context.Context, id, newFolderID uuid.UUID) error
+func (r *FileRepository) Move(ctx context.Context, id, newParentID uuid.UUID) error
 func (r *FileRepository) Delete(ctx context.Context, id uuid.UUID) error
 func (r *FileRepository) FindByNameInParent(ctx context.Context, name string, parentID uuid.UUID) (*file.File, error)
+func (r *FileRepository) FindByID(ctx context.Context, id uuid.UUID) (*file.File, error)

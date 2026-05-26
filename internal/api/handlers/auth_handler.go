@@ -21,7 +21,6 @@ func NewAuthHandler(svc *services.AuthService) *AuthHandler {
 
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var req dto.RegisterRequest
-
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		transport.WriteError(w, transport.ErrMalformedJSON)
 		return
@@ -39,7 +38,6 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req dto.LoginRequest
-
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		transport.WriteError(w, transport.ErrMalformedJSON)
 		return
