@@ -8,9 +8,9 @@ import (
 	"github.com/google/uuid"
 )
 
-type contextKey string
+type ctxKey int
 
-const callerIDKey contextKey = "CALLER_ID"
+const callerIDKey ctxKey = iota
 
 func WithCallerID(ctx context.Context, callerID uuid.UUID) context.Context {
 	return context.WithValue(ctx, callerIDKey, callerID)

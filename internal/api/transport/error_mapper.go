@@ -51,9 +51,6 @@ func MapHTTPStatus(errType string) int {
 	case ErrorTypeParsing.String():
 		return http.StatusBadRequest
 
-	case ErrorTypeParsing.String():
-		return http.StatusBadRequest
-
 	default:
 		return http.StatusInternalServerError
 	}

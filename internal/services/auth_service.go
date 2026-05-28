@@ -76,10 +76,10 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (string
 		return "", auth.ErrInvalidCredentials
 	}
 
-	token, err := s.repo.Login(ctx, email, password)
+	userID, err := s.repo.Login(ctx, email, password)
 	if err != nil {
 		return "", err
 	}
 
-	return token, nil
+	return userID, nil
 }
