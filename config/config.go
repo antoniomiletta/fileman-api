@@ -42,8 +42,8 @@ func Load() *Config {
 			ConnMaxLifetime: getDuration("DB_CONN_MAX_LIFETIME", time.Hour),
 		},
 		Storage: StorageConfig{
-			Backend:          getEnv("STORAGE_BACKEND", "local"),
-			LocalStoragePath: getEnv("LOCAL_STORAGE_PATH", "./data"),
+			Backend:  getEnv("STORAGE_BACKEND", "s3"),
+			S3Bucket: getEnv("S3_BUCKET", "./data"),
 		},
 		Auth: AuthConfig{
 			JWTSecret:   mustGetEnv("JWT_SECRET"),

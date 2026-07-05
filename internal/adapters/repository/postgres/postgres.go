@@ -1,34 +1,39 @@
 package postgres
 
 import (
-	"database/sql"
+	"context"
 	"fmt"
 
 	"github.com/antoniomiletta/fileman/config"
-	_ "github.com/jackc/pgx/v5/stdlib"
+	_ "github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type DB struct {
-	conn *sql.DB
+	pool *pgxpool.Pool
 }
 
 func Connect(cfg config.DatabaseConfig) (*DB, error) {
-	conn, err := sql.Open("pgx", cfg.URL)
+	poolCfg, err := pgxpool.ParseConfig(cfg.URL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse db config: %w", err)
+	}
+	poolCfg.MaxConns = int32(cfg.MaxOpenConns)
+	poolCfg.MinConns = int32(cfg.MaxIdleConns)
+	poolCfg.MaxConnLifetime = cfg.ConnMaxLifetime
+
+	pool, err := pgxpool.NewWithConfig(context.Background(), poolCfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to db: %w", err)
 	}
 
-	conn.SetMaxOpenConns(cfg.MaxOpenConns)
-	conn.SetMaxIdleConns(cfg.MaxIdleConns)
-	conn.SetConnMaxLifetime(cfg.ConnMaxLifetime)
-
-	if err := conn.Ping(); err != nil {
+	if err := pool.Ping(context.Background()); err != nil {
 		return nil, fmt.Errorf("failed to ping db: %w", err)
 	}
 
-	return &DB{conn: conn}, nil
+	return &DB{pool: pool}, nil
 }
 
-func (db *DB) Close() error {
-	return db.conn.Close()
+func (db *DB) Close() {
+	db.pool.Close()
 }
