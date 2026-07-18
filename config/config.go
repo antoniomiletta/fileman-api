@@ -1,6 +1,10 @@
 package config
 
-import "time"
+import (
+	"time"
+
+	"github.com/caarlos0/env/v11"
+)
 
 type Config struct {
 	Server   ServerConfig
@@ -10,44 +14,29 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	Port string
+	Port string `env:"PORT"`
 }
 
 type DatabaseConfig struct {
-	URL             string
-	MaxOpenConns    int
-	MaxIdleConns    int
-	ConnMaxLifetime time.Duration
+	URL             string        `env:"PORT"`
+	MaxOpenConns    int           `env:"DB_URL"`
+	MaxIdleConns    int           `env:"DB_MAX_IDLE_CONNS"`
+	ConnMaxLifetime time.Duration `env:"DB_CONN_MAX_LIFETIME"`
 }
 
 type StorageConfig struct {
-	Backend  string
-	S3Bucket string
+	Backend  string `env:"STORAGE_BACKEND"`
+	S3Bucket string `env:"S3_BUCKET"`
 }
 
 type AuthConfig struct {
-	JWTSecret   string
-	TokenExpiry time.Duration
+	JWTSecret   string        `env:"JWT_SECRET"`
+	TokenExpiry time.Duration `env:"TOKEN_EXPIRY"`
 }
 
 func Load() *Config {
-	return &Config{
-		Server: ServerConfig{
-			Port: getEnv("PORT", "8080"),
-		},
-		Database: DatabaseConfig{
-			URL:             mustGetEnv("DB_URL"),
-			MaxOpenConns:    getInt("DB_MAX_OPEN_CONNS", 20),
-			MaxIdleConns:    getInt("DB_MAX_IDLE_CONNS", 10),
-			ConnMaxLifetime: getDuration("DB_CONN_MAX_LIFETIME", time.Hour),
-		},
-		Storage: StorageConfig{
-			Backend:  getEnv("STORAGE_BACKEND", "s3"),
-			S3Bucket: getEnv("S3_BUCKET", "./data"),
-		},
-		Auth: AuthConfig{
-			JWTSecret:   mustGetEnv("JWT_SECRET"),
-			TokenExpiry: getDuration("TOKEN_EXPIRY", 24*time.Hour),
-		},
-	}
+	var cfg Config
+	env.Parse(&cfg)
+
+	return &cfg
 }
