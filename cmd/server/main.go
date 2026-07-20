@@ -4,10 +4,11 @@ import (
 	"log"
 
 	"github.com/antoniomiletta/fileman/config"
-	"github.com/antoniomiletta/fileman/internal/adapters/repository/postgres"
-	"github.com/antoniomiletta/fileman/internal/adapters/storage/s3"
+	"github.com/antoniomiletta/fileman/internal/adapter/db/postgres"
+	"github.com/antoniomiletta/fileman/internal/adapter/storage/s3"
 	"github.com/antoniomiletta/fileman/internal/api"
-	"github.com/antoniomiletta/fileman/internal/services"
+	"github.com/antoniomiletta/fileman/internal/pkg/authenticator"
+	"github.com/antoniomiletta/fileman/internal/service"
 )
 
 func main() {
@@ -28,15 +29,17 @@ func main() {
 	folderRepo := postgres.NewFolderRepository(db)
 	fileRepo := postgres.NewFileRepository(db)
 
-	authSvc := services.NewAuthService(authRepo)
-	folderSvc := services.NewFolderService(folderRepo)
-	fileSvc := services.NewFileService(fileRepo, folderRepo, storage)
+	authenticator := authenticator.NewAuthenticator(cfg.Auth)
 
-	server := api.NewServer(api.NewServerInput{
+	authSvc := service.NewAuthService(authRepo, authenticator)
+	folderSvc := service.NewFolderService(folderRepo)
+	fileSvc := service.NewFileService(fileRepo, folderRepo, storage)
+
+	server := api.NewServer(api.ServerDeps{
+		Cfg:       cfg.Server,
 		AuthSvc:   authSvc,
 		FolderSvc: folderSvc,
 		FileSvc:   fileSvc,
-		Cfg:       cfg.Server,
 	})
 
 	server.Start()

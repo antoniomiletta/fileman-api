@@ -1,4 +1,4 @@
-package services
+package service
 
 import (
 	"context"
@@ -11,12 +11,14 @@ import (
 )
 
 type AuthService struct {
-	repo ports.AuthRepository
+	repo          ports.AuthRepository
+	authenticator *authenticator.Authenticator
 }
 
-func NewAuthService(repo ports.AuthRepository) *AuthService {
+func NewAuthService(repo ports.AuthRepository, authenticator *authenticator.Authenticator) *AuthService {
 	return &AuthService{
-		repo: repo,
+		repo:          repo,
+		authenticator: authenticator,
 	}
 }
 
@@ -76,10 +78,10 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (string
 		return "", auth.ErrInvalidCredentials
 	}
 
-	userID, err := s.repo.Login(ctx, email, password)
+	token, err := s.authenticator.GenerateToken(user.ID.String())
 	if err != nil {
 		return "", err
 	}
 
-	return userID, nil
+	return token, nil
 }

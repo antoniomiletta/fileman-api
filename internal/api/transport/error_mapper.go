@@ -20,7 +20,7 @@ type StatusCarrier interface {
 func MapError(err error) APIError {
 	if carrier, ok := AsType[StatusCarrier](err); ok {
 		return APIError{
-			Message: err.Error(),
+			Message: carrier.Error(),
 			Status:  MapHTTPStatus(carrier.Type()),
 		}
 	}

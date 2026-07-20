@@ -11,7 +11,6 @@ import (
 
 type AuthRepository interface {
 	Register(ctx context.Context, user *auth.User) error
-	Login(ctx context.Context, email, password string) (string, error)
 	FindByEmail(ctx context.Context, email string) (*auth.User, error)
 }
 

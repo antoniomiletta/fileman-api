@@ -5,12 +5,19 @@ import (
 	"fmt"
 
 	"github.com/antoniomiletta/fileman/config"
-	_ "github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type DB struct {
 	pool *pgxpool.Pool
+}
+
+type Querier interface {
+	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+	Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error)
 }
 
 func Connect(cfg config.DatabaseConfig) (*DB, error) {
@@ -36,4 +43,20 @@ func Connect(cfg config.DatabaseConfig) (*DB, error) {
 
 func (db *DB) Close() {
 	db.pool.Close()
+}
+
+func (db *DB) Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error) {
+	return db.pool.Query(ctx, sql, args...)
+}
+
+func (db *DB) QueryRow(ctx context.Context, sql string, args ...any) pgx.Row {
+	return db.pool.QueryRow(ctx, sql, args...)
+}
+
+func (db *DB) Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error) {
+	return db.pool.Exec(ctx, sql, args...)
+}
+
+func (db *DB) Pool() *pgxpool.Pool {
+	return db.pool
 }

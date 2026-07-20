@@ -1,4 +1,4 @@
-package handlers
+package handler
 
 import (
 	"encoding/json"
@@ -8,15 +8,15 @@ import (
 	"github.com/antoniomiletta/fileman/internal/api/transport"
 	"github.com/antoniomiletta/fileman/internal/pkg/authenticator"
 	"github.com/antoniomiletta/fileman/internal/pkg/filesys"
-	"github.com/antoniomiletta/fileman/internal/services"
+	"github.com/antoniomiletta/fileman/internal/service"
 	"github.com/google/uuid"
 )
 
 type FileHandler struct {
-	svc *services.FileService
+	svc *service.FileService
 }
 
-func NewFileHandler(svc *services.FileService) *FileHandler {
+func NewFileHandler(svc *service.FileService) *FileHandler {
 	return &FileHandler{
 		svc: svc,
 	}
@@ -43,8 +43,8 @@ func (h *FileHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	defer fileContent.Close()
 
-	if err := h.svc.CreateFile(r.Context(), services.CreateFileInput{
-		OwnerID:  authenticator.GetIDFromToken(r.Header.Get("Authorization")),
+	if err := h.svc.CreateFile(r.Context(), service.CreateFileInput{
+		OwnerID:  authenticator.SubFromToken(r.Header.Get("Authorization")),
 		ParentID: req.ParentID,
 		Name:     fileHeader.Filename,
 		MIMEType: filesys.DetectMIME(fileContent),

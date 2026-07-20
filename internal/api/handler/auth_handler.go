@@ -1,4 +1,4 @@
-package handlers
+package handler
 
 import (
 	"encoding/json"
@@ -6,14 +6,14 @@ import (
 
 	"github.com/antoniomiletta/fileman/internal/api/dto"
 	"github.com/antoniomiletta/fileman/internal/api/transport"
-	"github.com/antoniomiletta/fileman/internal/services"
+	"github.com/antoniomiletta/fileman/internal/service"
 )
 
 type AuthHandler struct {
-	svc *services.AuthService
+	svc *service.AuthService
 }
 
-func NewAuthHandler(svc *services.AuthService) *AuthHandler {
+func NewAuthHandler(svc *service.AuthService) *AuthHandler {
 	return &AuthHandler{
 		svc: svc,
 	}
@@ -27,7 +27,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	if err := h.svc.CreateUser(r.Context(), services.CreateUserInput{
+	if err := h.svc.CreateUser(r.Context(), service.CreateUserInput{
 		Email:    req.Email,
 		Password: req.Password,
 	}); err != nil {

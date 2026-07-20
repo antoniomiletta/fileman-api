@@ -8,11 +8,11 @@ import (
 )
 
 type FolderRepository struct {
-	db *DB
+	db Querier
 }
 
-func NewFolderRepository(db *DB) *FolderRepository {
-	return &FolderRepository{db: db}
+func NewFolderRepository(q Querier) *FolderRepository {
+	return &FolderRepository{db: q}
 }
 
 // sql queries

@@ -15,10 +15,6 @@ var (
 		Msg: "user not found",
 		Typ: domain.ErrorTypeRetrieval,
 	}
-	ErrInvalidToken = domain.DomainError{
-		Msg: "invalid or expired authentication token",
-		Typ: domain.ErrorTypeAuthorization,
-	}
 	ErrInvalidCredentials = domain.DomainError{
 		Msg: "invalid credentials",
 		Typ: domain.ErrorTypeAuthorization,

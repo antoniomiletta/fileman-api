@@ -1,4 +1,4 @@
-package handlers
+package handler
 
 import (
 	"encoding/json"
@@ -7,15 +7,15 @@ import (
 	"github.com/antoniomiletta/fileman/internal/api/dto"
 	"github.com/antoniomiletta/fileman/internal/api/transport"
 	"github.com/antoniomiletta/fileman/internal/pkg/authenticator"
-	"github.com/antoniomiletta/fileman/internal/services"
+	"github.com/antoniomiletta/fileman/internal/service"
 	"github.com/google/uuid"
 )
 
 type FolderHandler struct {
-	svc *services.FolderService
+	svc *service.FolderService
 }
 
-func NewFolderHandler(svc *services.FolderService) *FolderHandler {
+func NewFolderHandler(svc *service.FolderService) *FolderHandler {
 	return &FolderHandler{
 		svc: svc,
 	}
@@ -30,8 +30,8 @@ func (h *FolderHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	if err := h.svc.CreateFolder(r.Context(), services.CreateFolderInput{
-		OwnerID:  authenticator.GetIDFromToken(r.Header.Get("Authorization")),
+	if err := h.svc.CreateFolder(r.Context(), service.CreateFolderInput{
+		OwnerID:  authenticator.SubFromToken(r.Header.Get("Authorization")),
 		ParentID: req.ParentID,
 		Name:     req.Name,
 	}); err != nil {

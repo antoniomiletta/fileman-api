@@ -1,4 +1,4 @@
-package middlewares
+package middleware
 
 import (
 	"context"
@@ -15,17 +15,27 @@ type ctxKey int
 
 const userClaimsKey ctxKey = iota
 
-func Auth(next http.Handler) http.Handler {
+type Middleware struct {
+	authenticator *authenticator.Authenticator
+}
+
+func New(a *authenticator.Authenticator) *Middleware {
+	return &Middleware{
+		authenticator: a,
+	}
+}
+
+func (m *Middleware) Auth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token, err := extractToken(r)
 		if err != nil {
-			transport.WriteError(w, auth.ErrForbidden)
+			transport.WriteError(w, auth.ErrUnauthenticated)
 			return
 		}
 
-		claims, err := authenticator.ValidateToken(token)
+		claims, err := m.authenticator.VerifyToken(token)
 		if err != nil {
-			transport.WriteError(w, auth.ErrInvalidToken)
+			transport.WriteError(w, authenticator.ErrInvalidToken)
 			return
 		}
 
@@ -36,16 +46,17 @@ func Auth(next http.Handler) http.Handler {
 }
 
 func extractToken(r *http.Request) (string, error) {
-	authHeader := r.Header.Get("Authorization")
+	h := r.Header.Get("Authorization")
+	prefix := "Bearer"
 
-	if authHeader == "" {
+	if h == "" {
 		return "", auth.ErrUnauthenticated
 	}
 
-	split := strings.Split(authHeader, " ")
-	if len(split) != 2 || !strings.EqualFold(split[0], "Bearer") {
+	if !strings.HasPrefix(h, prefix) {
 		return "", fmt.Errorf("%w: expected Bearer {token}", transport.ErrMalformedToken)
 	}
 
-	return split[1], nil
+	return strings.TrimPrefix(h, prefix), nil
+
 }
