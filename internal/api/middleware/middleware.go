@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"strings"
@@ -9,11 +8,9 @@ import (
 	"github.com/antoniomiletta/fileman/internal/api/transport"
 	"github.com/antoniomiletta/fileman/internal/domain/auth"
 	"github.com/antoniomiletta/fileman/internal/pkg/authenticator"
+	"github.com/antoniomiletta/fileman/internal/pkg/reqctx"
+	"github.com/google/uuid"
 )
-
-type ctxKey int
-
-const userClaimsKey ctxKey = iota
 
 type Middleware struct {
 	authenticator *authenticator.Authenticator
@@ -29,17 +26,22 @@ func (m *Middleware) Auth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token, err := extractToken(r)
 		if err != nil {
-			transport.WriteError(w, auth.ErrUnauthenticated)
+			transport.WriteError(w, transport.ErrMalformedToken)
 			return
 		}
 
 		claims, err := m.authenticator.VerifyToken(token)
 		if err != nil {
-			transport.WriteError(w, authenticator.ErrInvalidToken)
+			transport.WriteError(w, err)
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), userClaimsKey, claims)
+		callerID, err := uuid.Parse(claims.Subject)
+		if err != nil {
+			transport.WriteError(w, auth.ErrUnauthenticated)
+		}
+
+		ctx := reqctx.WithCallerID(r.Context(), callerID)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})

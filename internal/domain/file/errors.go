@@ -42,4 +42,9 @@ var (
 		Msg: "invalid status transition",
 		Typ: domain.ErrorTypeLogical,
 	}
+
+	ErrInexistentParent = domain.DomainError{
+		Msg: "target parent does not exist",
+		Typ: domain.ErrorTypeLogical,
+	}
 )

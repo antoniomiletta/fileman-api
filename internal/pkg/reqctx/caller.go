@@ -19,7 +19,7 @@ func WithCallerID(ctx context.Context, callerID uuid.UUID) context.Context {
 func CallerIDFrom(ctx context.Context) (uuid.UUID, error) {
 	id, ok := ctx.Value(callerIDKey).(uuid.UUID)
 	if !ok {
-		return uuid.UUID{}, fmt.Errorf("%w: missing token", auth.ErrUnauthenticated)
+		return uuid.UUID{}, fmt.Errorf("missing token: %w", auth.ErrUnauthenticated)
 	}
 
 	return id, nil
