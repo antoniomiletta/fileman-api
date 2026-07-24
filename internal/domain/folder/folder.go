@@ -17,6 +17,6 @@ type Folder struct {
 }
 
 type FolderContent struct {
-	Subfolders []Folder
-	Files      []file.File
+	Subfolders []*Folder
+	Files      []*file.File
 }

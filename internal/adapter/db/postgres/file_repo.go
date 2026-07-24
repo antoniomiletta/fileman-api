@@ -18,7 +18,6 @@ func NewFileRepository(q Querier) *FileRepository {
 	return &FileRepository{db: q}
 }
 
-// sql queries
 func (r *FileRepository) Create(ctx context.Context, f *file.File) error {
 	const query = `
 		INSERT INTO files (id, owner_id, parent_id, name, mime_type, size, storage_key, status, created_at, updated_at)
@@ -38,7 +37,6 @@ func (r *FileRepository) Create(ctx context.Context, f *file.File) error {
 		if isUniqueViolation(err) {
 			return file.ErrFileNameConflict
 		}
-
 		return fmt.Errorf("postgres: create file: %w", err)
 	}
 
