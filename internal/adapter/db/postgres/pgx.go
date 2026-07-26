@@ -20,8 +20,8 @@ type Querier interface {
 	Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error)
 }
 
-func Connect(cfg config.DatabaseConfig) (*DB, error) {
-	poolCfg, err := pgxpool.ParseConfig(cfg.URL)
+func Connect(cfg config.DBConfig) (*DB, error) {
+	poolCfg, err := pgxpool.ParseConfig(cfg.URL())
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse db config: %w", err)
 	}
