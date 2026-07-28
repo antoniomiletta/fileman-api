@@ -32,7 +32,7 @@ func (r *FileRepository) Create(ctx context.Context, f *file.File) error {
 		f.MIMEType,
 		f.Size,
 		f.StorageKey,
-		f.Status)
+		f.UploadStatus)
 	if err != nil {
 		if isUniqueViolation(err) {
 			return file.ErrFileNameConflict
@@ -100,7 +100,7 @@ func (r *FileRepository) FindByID(ctx context.Context, id uuid.UUID) (*file.File
 		&f.MIMEType,
 		&f.Size,
 		&f.StorageKey,
-		&f.Status,
+		&f.UploadStatus,
 		&f.CreatedAt,
 		&f.UpdatedAt,
 	)
@@ -131,7 +131,7 @@ func (r *FileRepository) FindByNameInParent(ctx context.Context, name string, pa
 		&f.MIMEType,
 		&f.Size,
 		&f.StorageKey,
-		&f.Status,
+		&f.UploadStatus,
 		&f.CreatedAt,
 		&f.UpdatedAt,
 	)

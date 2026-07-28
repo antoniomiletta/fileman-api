@@ -36,15 +36,17 @@ func (s *FolderService) CreateFolder(ctx context.Context, input CreateFolderInpu
 		return err
 	}
 
-	if input.ParentID != nil {
-		parent, err := s.repo.FindByID(ctx, *input.ParentID)
-		if err != nil {
-			return fmt.Errorf("%w: specified parent does not exist", err)
-		}
+	if input.ParentID == nil {
+		return folder.ErrCannotCreateNewRootFolder
+	}
 
-		if parent.OwnerID != input.OwnerID {
-			return fmt.Errorf("%w: cannot create on specified parent", auth.ErrForbidden)
-		}
+	parent, err := s.repo.FindByID(ctx, *input.ParentID)
+	if err != nil {
+		return fmt.Errorf("%w: specified parent does not exist", err)
+	}
+
+	if parent.OwnerID != input.OwnerID {
+		return fmt.Errorf("%w: cannot create on specified parent", auth.ErrForbidden)
 	}
 
 	clash, _ := s.repo.FindByNameInParent(ctx, input.Name, *input.ParentID)
@@ -61,11 +63,7 @@ func (s *FolderService) CreateFolder(ctx context.Context, input CreateFolderInpu
 		UpdatedAt: time.Now(),
 	}
 
-	if err := s.repo.Create(ctx, &fol); err != nil {
-		return err
-	}
-
-	return nil
+	return s.repo.Create(ctx, &fol)
 }
 
 func (s *FolderService) ListChildren(ctx context.Context, folderID uuid.UUID) (*folder.FolderContent, error) {
@@ -83,12 +81,7 @@ func (s *FolderService) ListChildren(ctx context.Context, folderID uuid.UUID) (*
 		return nil, fmt.Errorf("%w: cannot access contents of specified folder", auth.ErrForbidden)
 	}
 
-	content, err := s.repo.ListChildren(ctx, folderID)
-	if err != nil {
-		return nil, err
-	}
-
-	return content, nil
+	return s.repo.ListChildren(ctx, folderID)
 }
 
 func (s *FolderService) MoveFolder(ctx context.Context, id, newParentID uuid.UUID) error {
@@ -144,11 +137,7 @@ func (s *FolderService) MoveFolder(ctx context.Context, id, newParentID uuid.UUI
 		return folder.ErrFolderNameConflict
 	}
 
-	if err := s.repo.Move(ctx, id, newParentID); err != nil {
-		return err
-	}
-
-	return nil
+	return s.repo.Move(ctx, id, newParentID)
 }
 
 func (s *FolderService) DeleteFolder(ctx context.Context, id uuid.UUID) error {
@@ -172,9 +161,5 @@ func (s *FolderService) DeleteFolder(ctx context.Context, id uuid.UUID) error {
 
 	// TODO: handle non empty folders (delete recursevely)
 
-	if err := s.repo.Delete(ctx, id); err != nil {
-		return err
-	}
-
-	return nil
+	return s.repo.Delete(ctx, id)
 }

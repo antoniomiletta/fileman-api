@@ -19,15 +19,17 @@ func NewAuthHandler(svc *service.AuthService) *AuthHandler {
 	}
 }
 
-func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
-	var req dto.RegisterRequest
+func (h *AuthHandler) SignUp(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	var req dto.SignUpRequest
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		transport.WriteError(w, transport.ErrMalformedJSON)
 		return
 	}
 	defer r.Body.Close()
 
-	if err := h.svc.CreateUser(r.Context(), service.CreateUserInput{
+	if err := h.svc.CreateUser(ctx, service.CreateUserInput{
 		Email:    req.Email,
 		Password: req.Password,
 	}); err != nil {
@@ -37,14 +39,16 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	var req dto.LoginRequest
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		transport.WriteError(w, transport.ErrMalformedJSON)
 		return
 	}
 	defer r.Body.Close()
 
-	token, err := h.svc.Login(r.Context(), req.Email, req.Password)
+	token, err := h.svc.Login(ctx, req.Email, req.Password)
 	if err != nil {
 		transport.WriteError(w, err)
 		return

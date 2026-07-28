@@ -18,11 +18,11 @@ type Claims struct {
 }
 
 var (
-	ErrUnexpectedAlg = domain.DomainError{
+	ErrUnexpectedAlg = domain.ApplicationError{
 		Msg: "unexpected signing algorithm",
 		Typ: domain.ErrorTypeValidation,
 	}
-	ErrInvalidToken = domain.DomainError{
+	ErrInvalidToken = domain.ApplicationError{
 		Msg: "invalid authentication token",
 		Typ: domain.ErrorTypeValidation,
 	}

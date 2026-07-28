@@ -12,15 +12,15 @@ const (
 
 func (t ErrorType) String() string { return string(t) }
 
-type DomainError struct {
+type ApplicationError struct {
 	Msg string
 	Typ ErrorType
 }
 
-func (e DomainError) Error() string {
+func (e ApplicationError) Error() string {
 	return e.Msg
 }
 
-func (e DomainError) Type() string {
+func (e ApplicationError) Type() string {
 	return e.Typ.String()
 }

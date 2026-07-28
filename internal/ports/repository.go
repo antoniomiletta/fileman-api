@@ -10,7 +10,7 @@ import (
 )
 
 type AuthRepository interface {
-	Register(ctx context.Context, user *auth.User) error
+	SignUp(ctx context.Context, user *auth.User) error
 	FindByEmail(ctx context.Context, email string) (*auth.User, error)
 }
 
@@ -23,6 +23,7 @@ type FileRepository interface {
 }
 
 type FolderRepository interface {
+	CreateRoot(ctx context.Context, ownerID uuid.UUID) error
 	Create(ctx context.Context, folder *folder.Folder) error
 	ListChildren(ctx context.Context, folderID uuid.UUID) (*folder.FolderContent, error)
 	Move(ctx context.Context, id, newParentID uuid.UUID) error

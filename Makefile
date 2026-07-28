@@ -5,10 +5,13 @@ endif
 include .env
 export
 
-MIGRATIONS_DIR = db/migrations
+
 BUILD_DIR = ./bin
 BINARY_NAME = fileman
 ENTRYPOINT = ./cmd/server/main.go
+
+DB_URL = postgres://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable
+MIGRATIONS_DIR = db/migrations
 
 .PHONY:dev build run clean docker-up docker-down docker-ps migrate-up migrate-down
 

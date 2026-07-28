@@ -6,8 +6,8 @@ import (
 
 	"github.com/antoniomiletta/fileman/internal/api/dto"
 	"github.com/antoniomiletta/fileman/internal/api/transport"
-	"github.com/antoniomiletta/fileman/internal/pkg/authenticator"
 	"github.com/antoniomiletta/fileman/internal/pkg/filesys"
+	"github.com/antoniomiletta/fileman/internal/pkg/reqctx"
 	"github.com/antoniomiletta/fileman/internal/service"
 	"github.com/google/uuid"
 )
@@ -23,43 +23,53 @@ func NewFileHandler(svc *service.FileService) *FileHandler {
 }
 
 func (h *FileHandler) Create(w http.ResponseWriter, r *http.Request) {
-	var req dto.CreateFileRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		transport.WriteError(w, transport.ErrMalformedJSON)
-		return
-	}
-	defer r.Body.Close()
+	ctx := r.Context()
 
-	err := r.ParseMultipartForm(32 << 20)
-	if err != nil {
+	if err := r.ParseMultipartForm(32 << 20); err != nil {
 		transport.WriteError(w, err)
 		return
 	}
 
-	fileContent, fileHeader, err := r.FormFile(transport.MultipartFieldFile)
+	parentID, err := uuid.Parse(r.FormValue(dto.MultipartFieldParentID))
+	if err != nil {
+		transport.WriteError(w, transport.ErrInvalidPathParam)
+		return
+	}
+
+	fileContent, fileHeader, err := r.FormFile(dto.MultipartFieldFile)
 	if err != nil {
 		transport.WriteError(w, err)
 		return
 	}
 	defer fileContent.Close()
 
-	if err := h.svc.CreateFile(r.Context(), service.CreateFileInput{
-		OwnerID:  authenticator.SubFromToken(r.Header.Get("Authorization")),
-		ParentID: req.ParentID,
+	callerID, err := reqctx.CallerIDFrom(ctx)
+	if err != nil {
+		transport.WriteError(w, err)
+		return
+	}
+
+	if err := h.svc.CreateFile(ctx, service.CreateFileInput{
+		OwnerID:  callerID,
+		ParentID: parentID,
 		Name:     fileHeader.Filename,
 		MIMEType: filesys.DetectMIME(fileContent),
 		Size:     fileHeader.Size,
 	}, fileContent); err != nil {
 		transport.WriteError(w, err)
+		return
 	}
 
 	transport.WriteStatus(w, http.StatusCreated)
 }
 
 func (h *FileHandler) Move(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	fileID, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
 		transport.WriteError(w, transport.ErrInvalidPathParam)
+		return
 	}
 
 	var newParentIdStr string
@@ -71,20 +81,30 @@ func (h *FileHandler) Move(w http.ResponseWriter, r *http.Request) {
 	newParentID, err := uuid.Parse(newParentIdStr)
 	if err != nil {
 		transport.WriteError(w, transport.ErrMalformedToken)
+		return
 	}
 
-	if err := h.svc.MoveFile(r.Context(), fileID, newParentID); err != nil {
+	if err := h.svc.MoveFile(ctx, fileID, newParentID); err != nil {
 		transport.WriteError(w, err)
+		return
 	}
+
+	transport.WriteStatus(w, http.StatusNoContent)
 }
 
 func (h *FileHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	fileID, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
 		transport.WriteError(w, transport.ErrInvalidPathParam)
+		return
 	}
 
-	if err := h.svc.DeleteFile(r.Context(), fileID); err != nil {
+	if err := h.svc.DeleteFile(ctx, fileID); err != nil {
 		transport.WriteError(w, err)
+		return
 	}
+
+	transport.WriteStatus(w, http.StatusNoContent)
 }

@@ -19,6 +19,20 @@ func NewFolderRepository(q Querier) *FolderRepository {
 	return &FolderRepository{db: q}
 }
 
+func (r *FolderRepository) CreateRoot(ctx context.Context, ownerID uuid.UUID) error {
+	const query = `
+		INSERT INTO folders (id, owner_id, parent_id, name, created_at, updated_at)
+		VALUES ($1, $2, NULL, 'root', NOW(), NOW())
+		`
+
+	_, err := r.db.Exec(ctx, query, uuid.New(), ownerID)
+	if err != nil {
+		return fmt.Errorf("postgres: create root folder: %w", err)
+	}
+
+	return nil
+}
+
 func (r *FolderRepository) Create(ctx context.Context, f *folder.Folder) error {
 	const query = `
 		INSERT INTO folders (id, owner_id, parent_id, name, created_at, updated_at)
@@ -118,7 +132,7 @@ func listChildFiles(ctx context.Context, db Querier, parentID uuid.UUID) ([]*fil
 			&f.MIMEType,
 			&f.Size,
 			&f.StorageKey,
-			&f.Status,
+			&f.UploadStatus,
 			&f.CreatedAt,
 			&f.UpdatedAt,
 		); err != nil {

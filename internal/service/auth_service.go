@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	"github.com/antoniomiletta/fileman/internal/adapter/db/postgres"
 	"github.com/antoniomiletta/fileman/internal/domain/auth"
 	"github.com/antoniomiletta/fileman/internal/pkg/authenticator"
 	"github.com/antoniomiletta/fileman/internal/ports"
@@ -11,13 +12,15 @@ import (
 )
 
 type AuthService struct {
-	repo          ports.AuthRepository
+	authRepo      ports.AuthRepository
+	txRunner      *postgres.TxRunner
 	authenticator *authenticator.Authenticator
 }
 
-func NewAuthService(repo ports.AuthRepository, authenticator *authenticator.Authenticator) *AuthService {
+func NewAuthService(authRepo ports.AuthRepository, txRunner *postgres.TxRunner, authenticator *authenticator.Authenticator) *AuthService {
 	return &AuthService{
-		repo:          repo,
+		authRepo:      authRepo,
+		txRunner:      txRunner,
 		authenticator: authenticator,
 	}
 }
@@ -40,7 +43,10 @@ func (s *AuthService) CreateUser(ctx context.Context, input CreateUserInput) err
 		return auth.ErrPasswordTooWeak
 	}
 
-	existing, _ := s.repo.FindByEmail(ctx, input.Email)
+	existing, err := s.authRepo.FindByEmail(ctx, input.Email)
+	if err != nil {
+		return err
+	}
 	if existing != nil {
 		return auth.ErrEmailTaken
 	}
@@ -51,11 +57,15 @@ func (s *AuthService) CreateUser(ctx context.Context, input CreateUserInput) err
 		Password: authenticator.Hash(input.Password),
 	}
 
-	if err := s.repo.Register(ctx, &user); err != nil {
-		return err
-	}
+	return s.txRunner.RunTx(ctx, func(q postgres.Querier) error {
+		authRepo := postgres.NewAuthRepository(q)
+		if err := authRepo.SignUp(ctx, &user); err != nil {
+			return err
+		}
 
-	return nil
+		folderRepo := postgres.NewFolderRepository(q)
+		return folderRepo.CreateRoot(ctx, user.ID)
+	})
 }
 
 func (s *AuthService) Login(ctx context.Context, email, password string) (string, error) {
@@ -69,7 +79,7 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (string
 		return "", auth.ErrInvalidCredentials
 	}
 
-	user, err := s.repo.FindByEmail(ctx, email)
+	user, err := s.authRepo.FindByEmail(ctx, email)
 	if err != nil || user == nil {
 		return "", auth.ErrInvalidCredentials
 	}
@@ -78,10 +88,5 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (string
 		return "", auth.ErrInvalidCredentials
 	}
 
-	token, err := s.authenticator.GenerateToken(user.ID.String())
-	if err != nil {
-		return "", err
-	}
-
-	return token, nil
+	return s.authenticator.GenerateToken(user.ID.String())
 }

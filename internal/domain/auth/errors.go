@@ -3,35 +3,35 @@ package auth
 import "github.com/antoniomiletta/fileman/internal/domain"
 
 var (
-	ErrUnauthenticated = domain.DomainError{
+	ErrUnauthenticated = domain.ApplicationError{
 		Msg: "not authenticated",
 		Typ: domain.ErrorTypeAuthorization,
 	}
-	ErrForbidden = domain.DomainError{
+	ErrForbidden = domain.ApplicationError{
 		Msg: "not authorized",
 		Typ: domain.ErrorTypeAuthorization,
 	}
-	ErrUserNotFound = domain.DomainError{
+	ErrUserNotFound = domain.ApplicationError{
 		Msg: "user not found",
 		Typ: domain.ErrorTypeRetrieval,
 	}
-	ErrInvalidCredentials = domain.DomainError{
+	ErrInvalidCredentials = domain.ApplicationError{
 		Msg: "invalid credentials",
 		Typ: domain.ErrorTypeAuthorization,
 	}
-	ErrCredentialsRequired = domain.DomainError{
+	ErrCredentialsRequired = domain.ApplicationError{
 		Msg: "email and password are required",
 		Typ: domain.ErrorTypeValidation,
 	}
-	ErrEmailTaken = domain.DomainError{
+	ErrEmailTaken = domain.ApplicationError{
 		Msg: "email already taken",
 		Typ: domain.ErrorTypeConflict,
 	}
-	ErrInvalidEmail = domain.DomainError{
+	ErrInvalidEmail = domain.ApplicationError{
 		Msg: "invalid email format",
 		Typ: domain.ErrorTypeValidation,
 	}
-	ErrPasswordTooWeak = domain.DomainError{
+	ErrPasswordTooWeak = domain.ApplicationError{
 		Msg: "password is too weak",
 		Typ: domain.ErrorTypeValidation,
 	}

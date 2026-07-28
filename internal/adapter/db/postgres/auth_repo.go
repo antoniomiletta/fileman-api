@@ -17,8 +17,7 @@ func NewAuthRepository(q Querier) *AuthRepository {
 	return &AuthRepository{db: q}
 }
 
-// sql queries
-func (r *AuthRepository) Register(ctx context.Context, user *auth.User) error {
+func (r *AuthRepository) SignUp(ctx context.Context, user *auth.User) error {
 	const query = `
 		INSERT INTO users (id, email, password_hash, created_at)
 		VALUES ($1, $2, $3, NOW())

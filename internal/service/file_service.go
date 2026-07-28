@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -31,7 +32,7 @@ func NewFileService(fileRepo ports.FileRepository, folderRepo ports.FolderReposi
 
 type CreateFileInput struct {
 	OwnerID  uuid.UUID
-	ParentID *uuid.UUID
+	ParentID uuid.UUID
 	Name     string
 	MIMEType string
 	Size     int64
@@ -46,23 +47,26 @@ func (s *FileService) CreateFile(ctx context.Context, input CreateFileInput, fil
 		return file.ErrFileTypeNotAllowed
 	}
 
-	if input.ParentID != nil {
-		parent, err := s.folderRepo.FindByID(ctx, *input.ParentID)
-		if err != nil {
-			return fmt.Errorf("%w: specified parent does not exist", folder.ErrFolderNotFound)
-		}
-
-		if parent.OwnerID != input.OwnerID {
-			return fmt.Errorf("%w: cannot create on specified parent", auth.ErrForbidden)
-		}
+	parent, err := s.folderRepo.FindByID(ctx, input.ParentID)
+	if err != nil {
+		return fmt.Errorf("%w: specified parent does not exist", folder.ErrFolderNotFound)
 	}
 
-	clash, _ := s.fileRepo.FindByNameInParent(ctx, input.Name, *input.ParentID)
+	if parent.OwnerID != input.OwnerID {
+		return fmt.Errorf("%w: cannot create on specified parent", auth.ErrForbidden)
+	}
+
+	clash, err := s.fileRepo.FindByNameInParent(ctx, input.Name, input.ParentID)
+	if err != nil && !errors.Is(err, file.ErrFileNotFound) {
+		return err
+	}
+
 	if clash != nil {
 		return file.ErrFileNameConflict
 	}
 
 	fil := file.File{
+		ID:       uuid.New(),
 		OwnerID:  input.OwnerID,
 		ParentID: input.ParentID,
 		Name:     strings.TrimSpace(input.Name),
@@ -73,17 +77,14 @@ func (s *FileService) CreateFile(ctx context.Context, input CreateFileInput, fil
 			ResourceType: storage.ResourceTypeFrom(input.MIMEType),
 			Filename:     input.Name,
 		}),
+		UploadStatus: file.UploadStatusPending,
 	}
 
 	if err := s.storage.Upload(ctx, fil.StorageKey, fileContent, fil.Size); err != nil {
 		return err
 	}
 
-	if err := s.fileRepo.Create(ctx, &fil); err != nil {
-		return err
-	}
-
-	return nil
+	return s.fileRepo.Create(ctx, &fil)
 }
 
 func (s *FileService) MoveFile(ctx context.Context, id, newParentID uuid.UUID) error {
@@ -101,7 +102,7 @@ func (s *FileService) MoveFile(ctx context.Context, id, newParentID uuid.UUID) e
 		return fmt.Errorf("%w: cannot move this file", auth.ErrForbidden)
 	}
 
-	if *fil.ParentID == newParentID {
+	if fil.ParentID == newParentID {
 		return folder.ErrAlreadyInDestination
 	}
 
@@ -114,16 +115,16 @@ func (s *FileService) MoveFile(ctx context.Context, id, newParentID uuid.UUID) e
 		return fmt.Errorf("%w: cannot move into specified folder", auth.ErrForbidden)
 	}
 
-	clash, _ := s.fileRepo.FindByNameInParent(ctx, fil.Name, newParentID)
+	clash, err := s.fileRepo.FindByNameInParent(ctx, fil.Name, newParentID)
+	if err != nil && !errors.Is(err, file.ErrFileNotFound) {
+		return err
+	}
+
 	if clash != nil {
 		return file.ErrFileNameConflict
 	}
 
-	if err := s.fileRepo.Move(ctx, id, newParentID); err != nil {
-		return err
-	}
-
-	return nil
+	return s.fileRepo.Move(ctx, id, newParentID)
 }
 
 func (s *FileService) DeleteFile(ctx context.Context, id uuid.UUID) error {
@@ -141,7 +142,5 @@ func (s *FileService) DeleteFile(ctx context.Context, id uuid.UUID) error {
 		return fmt.Errorf("%w: cannot delete this file", auth.ErrForbidden)
 	}
 
-	s.fileRepo.Delete(ctx, id)
-
-	return nil
+	return s.fileRepo.Delete(ctx, id)
 }

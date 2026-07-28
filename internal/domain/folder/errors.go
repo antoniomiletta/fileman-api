@@ -3,52 +3,57 @@ package folder
 import "github.com/antoniomiletta/fileman/internal/domain"
 
 var (
-	ErrFolderNotFound = domain.DomainError{
+	ErrFolderNotFound = domain.ApplicationError{
 		Msg: "folder not found",
 		Typ: domain.ErrorTypeRetrieval,
 	}
 
-	ErrFolderNameRequired = domain.DomainError{
+	ErrFolderNameRequired = domain.ApplicationError{
 		Msg: "folder name is required",
 		Typ: domain.ErrorTypeValidation,
 	}
 
-	ErrFolderNameInvalid = domain.DomainError{
+	ErrFolderNameInvalid = domain.ApplicationError{
 		Msg: "invalid folder name",
 		Typ: domain.ErrorTypeValidation,
 	}
 
-	ErrFolderNameTooLong = domain.DomainError{
+	ErrFolderNameTooLong = domain.ApplicationError{
 		Msg: "folder name is too long",
 		Typ: domain.ErrorTypeValidation,
 	}
 
-	ErrFolderNameConflict = domain.DomainError{
+	ErrFolderNameConflict = domain.ApplicationError{
 		Msg: "folder name already exists in target directory",
 		Typ: domain.ErrorTypeConflict,
 	}
 
-	ErrAlreadyInDestination = domain.DomainError{
+	ErrAlreadyInDestination = domain.ApplicationError{
 		Msg: "folder is already in the destination",
 		Typ: domain.ErrorTypeLogical,
 	}
 
-	ErrCannotMoveIntoItself = domain.DomainError{
+	ErrCannotMoveIntoItself = domain.ApplicationError{
 		Msg: "folder cannot be moved into itself",
 		Typ: domain.ErrorTypeLogical,
 	}
 
-	ErrCannotMoveIntoDescendant = domain.DomainError{
+	ErrCannotMoveIntoDescendant = domain.ApplicationError{
 		Msg: "folder cannot be moved into a descendant",
 		Typ: domain.ErrorTypeLogical,
 	}
 
-	ErrCannotMoveRootFolder = domain.DomainError{
+	ErrCannotCreateNewRootFolder = domain.ApplicationError{
+		Msg: "root folder cannot be duplicated",
+		Typ: domain.ErrorTypeLogical,
+	}
+
+	ErrCannotMoveRootFolder = domain.ApplicationError{
 		Msg: "root folder cannot be moved",
 		Typ: domain.ErrorTypeLogical,
 	}
 
-	ErrCannotDeleteRootFolder = domain.DomainError{
+	ErrCannotDeleteRootFolder = domain.ApplicationError{
 		Msg: "root folder cannot be deleted",
 		Typ: domain.ErrorTypeLogical,
 	}

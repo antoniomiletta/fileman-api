@@ -14,7 +14,7 @@ func (s *Server) Router() http.Handler {
 	fileHandler := handler.NewFileHandler(s.FileSvc)
 	folderHandler := handler.NewFolderHandler(s.FolderSvc)
 
-	mux.HandleFunc("POST /auth/register", authHandler.Register)
+	mux.HandleFunc("POST /auth/signup", authHandler.SignUp)
 	mux.HandleFunc("POST /auth/login", authHandler.Login)
 
 	mw := middleware.New(s.Authenticator)

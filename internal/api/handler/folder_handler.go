@@ -6,7 +6,7 @@ import (
 
 	"github.com/antoniomiletta/fileman/internal/api/dto"
 	"github.com/antoniomiletta/fileman/internal/api/transport"
-	"github.com/antoniomiletta/fileman/internal/pkg/authenticator"
+	"github.com/antoniomiletta/fileman/internal/pkg/reqctx"
 	"github.com/antoniomiletta/fileman/internal/service"
 	"github.com/google/uuid"
 )
@@ -22,6 +22,7 @@ func NewFolderHandler(svc *service.FolderService) *FolderHandler {
 }
 
 func (h *FolderHandler) Create(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	var req dto.CreateFolderRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -30,8 +31,14 @@ func (h *FolderHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	if err := h.svc.CreateFolder(r.Context(), service.CreateFolderInput{
-		OwnerID:  authenticator.SubFromToken(r.Header.Get("Authorization")),
+	callerID, err := reqctx.CallerIDFrom(ctx)
+	if err != nil {
+		transport.WriteError(w, err)
+		return
+	}
+
+	if err := h.svc.CreateFolder(ctx, service.CreateFolderInput{
+		OwnerID:  callerID,
 		ParentID: req.ParentID,
 		Name:     req.Name,
 	}); err != nil {
@@ -42,12 +49,14 @@ func (h *FolderHandler) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *FolderHandler) ListChildren(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	folderID, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
 		transport.WriteError(w, transport.ErrInvalidPathParam)
 	}
 
-	content, err := h.svc.ListChildren(r.Context(), folderID)
+	content, err := h.svc.ListChildren(ctx, folderID)
 	if err != nil {
 		transport.WriteError(w, err)
 	}
@@ -56,6 +65,8 @@ func (h *FolderHandler) ListChildren(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *FolderHandler) Move(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	folderID, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
 		transport.WriteError(w, transport.ErrInvalidPathParam)
@@ -72,18 +83,20 @@ func (h *FolderHandler) Move(w http.ResponseWriter, r *http.Request) {
 		transport.WriteError(w, transport.ErrMalformedToken)
 	}
 
-	if err := h.svc.MoveFolder(r.Context(), folderID, newParentID); err != nil {
+	if err := h.svc.MoveFolder(ctx, folderID, newParentID); err != nil {
 		transport.WriteError(w, err)
 	}
 }
 
 func (h *FolderHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	folderID, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
 		transport.WriteError(w, transport.ErrInvalidPathParam)
 	}
 
-	if err := h.svc.DeleteFolder(r.Context(), folderID); err != nil {
+	if err := h.svc.DeleteFolder(ctx, folderID); err != nil {
 		transport.WriteError(w, err)
 	}
 }

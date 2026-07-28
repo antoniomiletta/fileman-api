@@ -41,10 +41,6 @@ func Connect(cfg config.DBConfig) (*DB, error) {
 	return &DB{pool: pool}, nil
 }
 
-func (db *DB) Close() {
-	db.pool.Close()
-}
-
 func (db *DB) Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error) {
 	return db.pool.Query(ctx, sql, args...)
 }
@@ -59,4 +55,8 @@ func (db *DB) Exec(ctx context.Context, sql string, args ...any) (pgconn.Command
 
 func (db *DB) Pool() *pgxpool.Pool {
 	return db.pool
+}
+
+func (db *DB) Close() {
+	db.pool.Close()
 }
