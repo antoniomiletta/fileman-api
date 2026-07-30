@@ -12,10 +12,13 @@ type ctxKey int
 
 const callerIDKey ctxKey = iota
 
+// WithCallerID returns a derived context with the provided callerID value.
 func WithCallerID(ctx context.Context, callerID uuid.UUID) context.Context {
 	return context.WithValue(ctx, callerIDKey, callerID)
 }
 
+// CallerIDFrom returns the callerID value from the provided context.
+// If no value is found, it returns a wrapped auth.ErrUnauthenticated.
 func CallerIDFrom(ctx context.Context) (uuid.UUID, error) {
 	id, ok := ctx.Value(callerIDKey).(uuid.UUID)
 	if !ok {

@@ -32,5 +32,3 @@ func ValidateFileName(name string) error {
 
 	return nil
 }
-
-func IsAllowedMIME(mimeType string) bool

@@ -13,13 +13,13 @@ ENTRYPOINT = ./cmd/server/main.go
 DB_URL = postgres://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable
 MIGRATIONS_DIR = db/migrations
 
-.PHONY:dev build run clean docker-up docker-down docker-ps migrate-up migrate-down
+.PHONY:dev build run clean docker-up docker-down docker-ps migrate-up migrate-down migrate-version
 
 dev:
 	go run $(ENTRYPOINT)
 
 build:
-	go build -o $(BUILD_DIR)/$(BINARY_NAME) $(ENTRYPOINT)
+	mkdir -p $(BUILD_DIR) && go build -o $(BUILD_DIR)/$(BINARY_NAME) $(ENTRYPOINT)
 
 run: build
 	./$(BUILD_DIR)/$(BINARY_NAME)

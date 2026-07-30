@@ -26,7 +26,7 @@ func (m *Middleware) Auth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token, err := extractToken(r)
 		if err != nil {
-			transport.WriteError(w, transport.ErrMalformedToken)
+			transport.WriteError(w, err)
 			return
 		}
 

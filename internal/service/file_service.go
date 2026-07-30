@@ -43,13 +43,9 @@ func (s *FileService) CreateFile(ctx context.Context, input CreateFileInput, fil
 		return err
 	}
 
-	if !file.IsAllowedMIME(input.MIMEType) {
-		return file.ErrFileTypeNotAllowed
-	}
-
 	parent, err := s.folderRepo.FindByID(ctx, input.ParentID)
 	if err != nil {
-		return fmt.Errorf("%w: specified parent does not exist", folder.ErrFolderNotFound)
+		return fmt.Errorf("%w: parent not found", err)
 	}
 
 	if parent.OwnerID != input.OwnerID {
@@ -60,13 +56,19 @@ func (s *FileService) CreateFile(ctx context.Context, input CreateFileInput, fil
 	if err != nil && !errors.Is(err, file.ErrFileNotFound) {
 		return err
 	}
-
 	if clash != nil {
 		return file.ErrFileNameConflict
 	}
 
-	fil := file.File{
-		ID:       uuid.New(),
+	resourceType, ok := storage.Classify(input.MIMEType)
+	if !ok {
+		return file.ErrFileTypeNotAllowed
+	}
+
+	id := uuid.New()
+
+	f := file.File{
+		ID:       id,
 		OwnerID:  input.OwnerID,
 		ParentID: input.ParentID,
 		Name:     strings.TrimSpace(input.Name),
@@ -74,17 +76,17 @@ func (s *FileService) CreateFile(ctx context.Context, input CreateFileInput, fil
 		Size:     input.Size,
 		StorageKey: storage.GenerateFileKey(storage.FileKeyParams{
 			OwnerID:      input.OwnerID,
-			ResourceType: storage.ResourceTypeFrom(input.MIMEType),
-			Filename:     input.Name,
+			ResourceType: resourceType,
+			FileID:       id,
 		}),
 		UploadStatus: file.UploadStatusPending,
 	}
 
-	if err := s.storage.Upload(ctx, fil.StorageKey, fileContent, fil.Size); err != nil {
+	if err := s.storage.Upload(ctx, f.StorageKey, fileContent, f.Size); err != nil {
 		return err
 	}
 
-	return s.fileRepo.Create(ctx, &fil)
+	return s.fileRepo.Create(ctx, &f)
 }
 
 func (s *FileService) MoveFile(ctx context.Context, id, newParentID uuid.UUID) error {
@@ -93,16 +95,16 @@ func (s *FileService) MoveFile(ctx context.Context, id, newParentID uuid.UUID) e
 		return err
 	}
 
-	fil, err := s.fileRepo.FindByID(ctx, id)
+	f, err := s.fileRepo.FindByID(ctx, id)
 	if err != nil {
 		return err
 	}
 
-	if callerID != fil.OwnerID {
+	if callerID != f.OwnerID {
 		return fmt.Errorf("%w: cannot move this file", auth.ErrForbidden)
 	}
 
-	if fil.ParentID == newParentID {
+	if f.ParentID == newParentID {
 		return folder.ErrAlreadyInDestination
 	}
 
@@ -115,11 +117,10 @@ func (s *FileService) MoveFile(ctx context.Context, id, newParentID uuid.UUID) e
 		return fmt.Errorf("%w: cannot move into specified folder", auth.ErrForbidden)
 	}
 
-	clash, err := s.fileRepo.FindByNameInParent(ctx, fil.Name, newParentID)
+	clash, err := s.fileRepo.FindByNameInParent(ctx, f.Name, newParentID)
 	if err != nil && !errors.Is(err, file.ErrFileNotFound) {
 		return err
 	}
-
 	if clash != nil {
 		return file.ErrFileNameConflict
 	}
@@ -133,12 +134,12 @@ func (s *FileService) DeleteFile(ctx context.Context, id uuid.UUID) error {
 		return err
 	}
 
-	fil, err := s.fileRepo.FindByID(ctx, id)
+	f, err := s.fileRepo.FindByID(ctx, id)
 	if err != nil {
 		return err
 	}
 
-	if callerID != fil.OwnerID {
+	if callerID != f.OwnerID {
 		return fmt.Errorf("%w: cannot delete this file", auth.ErrForbidden)
 	}
 

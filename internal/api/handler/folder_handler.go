@@ -43,6 +43,7 @@ func (h *FolderHandler) Create(w http.ResponseWriter, r *http.Request) {
 		Name:     req.Name,
 	}); err != nil {
 		transport.WriteError(w, err)
+		return
 	}
 
 	transport.WriteStatus(w, http.StatusCreated)
@@ -54,11 +55,13 @@ func (h *FolderHandler) ListChildren(w http.ResponseWriter, r *http.Request) {
 	folderID, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
 		transport.WriteError(w, transport.ErrInvalidPathParam)
+		return
 	}
 
 	content, err := h.svc.ListChildren(ctx, folderID)
 	if err != nil {
 		transport.WriteError(w, err)
+		return
 	}
 
 	transport.WriteJSON(w, http.StatusOK, content)
@@ -70,6 +73,7 @@ func (h *FolderHandler) Move(w http.ResponseWriter, r *http.Request) {
 	folderID, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
 		transport.WriteError(w, transport.ErrInvalidPathParam)
+		return
 	}
 
 	var newParentIdStr string
@@ -81,11 +85,15 @@ func (h *FolderHandler) Move(w http.ResponseWriter, r *http.Request) {
 	newParentID, err := uuid.Parse(newParentIdStr)
 	if err != nil {
 		transport.WriteError(w, transport.ErrMalformedToken)
+		return
 	}
 
 	if err := h.svc.MoveFolder(ctx, folderID, newParentID); err != nil {
 		transport.WriteError(w, err)
+		return
 	}
+
+	transport.WriteStatus(w, http.StatusNoContent)
 }
 
 func (h *FolderHandler) Delete(w http.ResponseWriter, r *http.Request) {
@@ -94,9 +102,13 @@ func (h *FolderHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	folderID, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
 		transport.WriteError(w, transport.ErrInvalidPathParam)
+		return
 	}
 
 	if err := h.svc.DeleteFolder(ctx, folderID); err != nil {
 		transport.WriteError(w, err)
+		return
 	}
+
+	transport.WriteStatus(w, http.StatusNoContent)
 }

@@ -49,11 +49,17 @@ func (h *FileHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	mimeType, err := filesys.DetectMIME(fileContent)
+	if err != nil {
+		transport.WriteError(w, err)
+		return
+	}
+
 	if err := h.svc.CreateFile(ctx, service.CreateFileInput{
 		OwnerID:  callerID,
 		ParentID: parentID,
 		Name:     fileHeader.Filename,
-		MIMEType: filesys.DetectMIME(fileContent),
+		MIMEType: mimeType,
 		Size:     fileHeader.Size,
 	}, fileContent); err != nil {
 		transport.WriteError(w, err)

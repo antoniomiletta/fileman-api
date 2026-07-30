@@ -6,7 +6,6 @@ import (
 	"github.com/antoniomiletta/fileman/config"
 	"github.com/antoniomiletta/fileman/internal/domain"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/google/uuid"
 )
 
 type Authenticator struct {
@@ -32,6 +31,8 @@ func NewAuthenticator(cfg config.AuthConfig) *Authenticator {
 	return &Authenticator{cfg: cfg}
 }
 
+// GenerateToken returns a signed JWT token.
+// The provided userID is registered as the 'subject' claim.
 func (a *Authenticator) GenerateToken(userID string) (string, error) {
 	now := time.Now()
 	claims := Claims{
@@ -47,6 +48,8 @@ func (a *Authenticator) GenerateToken(userID string) (string, error) {
 	return token.SignedString(a.cfg.JWTSecret)
 }
 
+// VerifyToken parses and validates the given token string, returning its claims.
+// If the token is falsified, expired or uses an unexpected signing algorithm, it returns an error.
 func (a *Authenticator) VerifyToken(tokenString string) (*Claims, error) {
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (any, error) {
@@ -65,6 +68,3 @@ func (a *Authenticator) VerifyToken(tokenString string) (*Claims, error) {
 
 	return claims, nil
 }
-
-// accept pure tokens and bearer strings
-func SubFromToken(token string) uuid.UUID

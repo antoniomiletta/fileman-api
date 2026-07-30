@@ -51,13 +51,18 @@ func (s *AuthService) CreateUser(ctx context.Context, input CreateUserInput) err
 		return auth.ErrEmailTaken
 	}
 
+	hashed, err := authenticator.Hash(input.Password)
+	if err != nil {
+		return err
+	}
+
 	user := auth.User{
 		ID:       uuid.New(),
 		Email:    strings.ToLower(strings.TrimSpace(input.Email)),
-		Password: authenticator.Hash(input.Password),
+		Password: hashed,
 	}
 
-	return s.txRunner.RunTx(ctx, func(q postgres.Querier) error {
+	return s.txRunner.Run(ctx, func(q postgres.Querier) error {
 		authRepo := postgres.NewAuthRepository(q)
 		if err := authRepo.SignUp(ctx, &user); err != nil {
 			return err
@@ -84,7 +89,7 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (string
 		return "", auth.ErrInvalidCredentials
 	}
 
-	if !authenticator.CompareHash(user.Password, password) {
+	if !authenticator.Compare(password, user.Password) {
 		return "", auth.ErrInvalidCredentials
 	}
 

@@ -5,7 +5,7 @@ import (
 
 	"github.com/antoniomiletta/fileman/config"
 	"github.com/antoniomiletta/fileman/internal/adapter/db/postgres"
-	"github.com/antoniomiletta/fileman/internal/adapter/storage/awss3"
+	"github.com/antoniomiletta/fileman/internal/adapter/storage/local"
 	"github.com/antoniomiletta/fileman/internal/api"
 	"github.com/antoniomiletta/fileman/internal/pkg/authenticator"
 	"github.com/antoniomiletta/fileman/internal/service"
@@ -20,10 +20,7 @@ func main() {
 	}
 	defer db.Close()
 
-	storage, err := awss3.NewS3Backend(cfg.Storage)
-	if err != nil {
-		log.Fatalf("failed to initialize storage backend: %v", err)
-	}
+	storage := local.NewLocalStorage(cfg.Storage.LocalRoot)
 
 	authRepo := postgres.NewAuthRepository(db)
 	folderRepo := postgres.NewFolderRepository(db)

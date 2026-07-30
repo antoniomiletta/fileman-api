@@ -25,9 +25,9 @@ type DBConfig struct {
 	Host            string        `env:"DB_HOST"`
 	Port            int           `env:"DB_PORT"`
 	Name            string        `env:"DB_NAME"`
-	MaxOpenConns    int           `env:"DB_MAX_OPEN_CONNS"`
-	MaxIdleConns    int           `env:"DB_MAX_IDLE_CONNS"`
-	ConnMaxLifetime time.Duration `env:"DB_CONN_MAX_LIFETIME"`
+	MaxOpenConns    int           `env:"DB_MAX_OPEN_CONNS" envDefault:"25"`
+	MaxIdleConns    int           `env:"DB_MAX_IDLE_CONNS" envDefault:"25"`
+	ConnMaxLifetime time.Duration `env:"DB_CONN_MAX_LIFETIME" envDefault:"5m"`
 }
 
 func (c *DBConfig) URL() string {
@@ -42,13 +42,13 @@ func (c *DBConfig) URL() string {
 }
 
 type StorageConfig struct {
-	Backend  string `env:"STORAGE_BACKEND"`
-	S3Bucket string `env:"S3_BUCKET"`
+	Backend   string `env:"STORAGE_BACKEND" envDefault:"local"`
+	LocalRoot string `env:"LOCAL_STORAGE_ROOT" envDefault:"./data"`
 }
 
 type AuthConfig struct {
 	JWTSecret   string        `env:"JWT_SECRET"`
-	TokenExpiry time.Duration `env:"TOKEN_EXPIRY"`
+	TokenExpiry time.Duration `env:"TOKEN_EXPIRY" envDefault:"24h"`
 }
 
 func Load() *Config {
