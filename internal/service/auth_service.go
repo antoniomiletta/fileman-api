@@ -12,16 +12,16 @@ import (
 )
 
 type AuthService struct {
-	authRepo      ports.AuthRepository
-	txRunner      *postgres.TxRunner
-	authenticator *authenticator.Authenticator
+	authRepo ports.AuthRepository
+	txRunner *postgres.TxRunner
+	authn    *authenticator.Authenticator
 }
 
-func NewAuthService(authRepo ports.AuthRepository, txRunner *postgres.TxRunner, authenticator *authenticator.Authenticator) *AuthService {
+func NewAuthService(authRepo ports.AuthRepository, txRunner *postgres.TxRunner, authn *authenticator.Authenticator) *AuthService {
 	return &AuthService{
-		authRepo:      authRepo,
-		txRunner:      txRunner,
-		authenticator: authenticator,
+		authRepo: authRepo,
+		txRunner: txRunner,
+		authn:    authn,
 	}
 }
 
@@ -93,5 +93,5 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (string
 		return "", auth.ErrInvalidCredentials
 	}
 
-	return s.authenticator.GenerateToken(user.ID.String())
+	return s.authn.GenerateToken(user.ID.String())
 }

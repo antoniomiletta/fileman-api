@@ -1,11 +1,13 @@
 package local
 
+import "github.com/antoniomiletta/fileman/config"
+
 type LocalStorage struct {
 	root string
 }
 
-func NewLocalStorage(root string) *LocalStorage {
+func NewLocalStorage(cfg config.LocalConfig) *LocalStorage {
 	return &LocalStorage{
-		root: root,
+		root: cfg.LocalRoot,
 	}
 }

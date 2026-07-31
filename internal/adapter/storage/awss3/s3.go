@@ -10,4 +10,9 @@ type S3Storage struct {
 	bucket string
 }
 
-func NewS3Backend(cfg config.StorageConfig) (*S3Storage, error)
+func NewS3Storage(cfg config.S3Config) *S3Storage {
+	return &S3Storage{
+		client: s3.New(s3.Options{}),
+		bucket: cfg.S3Bucket,
+	}
+}

@@ -9,10 +9,10 @@ import (
 )
 
 type Config struct {
-	Server   ServerConfig
-	Database DBConfig
-	Storage  StorageConfig
-	Auth     AuthConfig
+	Server  ServerConfig
+	DB      DBConfig
+	Storage StorageConfig
+	Auth    AuthConfig
 }
 
 type ServerConfig struct {
@@ -42,8 +42,17 @@ func (c *DBConfig) URL() string {
 }
 
 type StorageConfig struct {
-	Backend   string `env:"STORAGE_BACKEND" envDefault:"local"`
-	LocalRoot string `env:"LOCAL_STORAGE_ROOT" envDefault:"./data"`
+	Backend     string `env:"STORAGE_BACKEND" envDefault:"local"`
+	LocalConfig LocalConfig
+	S3Config    S3Config
+}
+
+type LocalConfig struct {
+	LocalRoot string `env:"LOCAL_STORAGE_ROOT"`
+}
+
+type S3Config struct {
+	S3Bucket string `env:"S3_BUCKET"`
 }
 
 type AuthConfig struct {
@@ -51,9 +60,11 @@ type AuthConfig struct {
 	TokenExpiry time.Duration `env:"TOKEN_EXPIRY" envDefault:"24h"`
 }
 
-func Load() *Config {
+func Load() (*Config, error) {
 	var cfg Config
-	env.Parse(&cfg)
+	if err := env.Parse(&cfg); err != nil {
+		return nil, err
+	}
 
-	return &cfg
+	return &cfg, nil
 }

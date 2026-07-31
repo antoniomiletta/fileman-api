@@ -13,12 +13,12 @@ import (
 )
 
 type Middleware struct {
-	authenticator *authenticator.Authenticator
+	authn *authenticator.Authenticator
 }
 
 func New(a *authenticator.Authenticator) *Middleware {
 	return &Middleware{
-		authenticator: a,
+		authn: a,
 	}
 }
 
@@ -30,7 +30,7 @@ func (m *Middleware) Auth(next http.Handler) http.Handler {
 			return
 		}
 
-		claims, err := m.authenticator.VerifyToken(token)
+		claims, err := m.authn.VerifyToken(token)
 		if err != nil {
 			transport.WriteError(w, err)
 			return

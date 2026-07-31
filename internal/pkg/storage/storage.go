@@ -14,7 +14,6 @@ const (
 	ResourceTypeArchive  ResourceType = "archives"
 	ResourceTypeAudio    ResourceType = "audio"
 	ResourceTypeVideo    ResourceType = "video"
-	ResourceTypeOther    ResourceType = "other"
 )
 
 // mimeResourceMap maps all the system's allowed MIME types
