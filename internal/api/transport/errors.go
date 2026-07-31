@@ -1,37 +1,18 @@
 package transport
 
-type ErrorType string
+import "github.com/antoniomiletta/fileman/internal/domain"
 
 var (
-	ErrorTypeParsing ErrorType = "PARSING"
-)
-
-func (t ErrorType) String() string { return string(t) }
-
-type TransportError struct {
-	msg string
-	typ ErrorType
-}
-
-func (e TransportError) Error() string {
-	return e.msg
-}
-
-func (e TransportError) Type() string {
-	return e.typ.String()
-}
-
-var (
-	ErrMalformedJSON = TransportError{
-		msg: "invalid JSON payload",
-		typ: ErrorTypeParsing,
+	ErrMalformedJSON = domain.ApplicationError{
+		Msg: "invalid JSON payload",
+		Typ: domain.ErrorTypeValidation,
 	}
-	ErrInvalidPathParam = TransportError{
-		msg: "invalid path parameter",
-		typ: ErrorTypeParsing,
+	ErrInvalidPathParam = domain.ApplicationError{
+		Msg: "invalid path parameter",
+		Typ: domain.ErrorTypeValidation,
 	}
-	ErrMalformedToken = TransportError{
-		msg: "invalid authentication token format",
-		typ: ErrorTypeParsing,
+	ErrMalformedToken = domain.ApplicationError{
+		Msg: "invalid authentication token format",
+		Typ: domain.ErrorTypeValidation,
 	}
 )

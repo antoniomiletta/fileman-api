@@ -7,59 +7,48 @@ import (
 	"github.com/antoniomiletta/fileman/internal/domain"
 )
 
-type APIError struct {
+type HttpError struct {
 	Status  int
 	Message string
 }
 
-type StatusCarrier interface {
-	Error() string
-	Type() string
-}
-
-func MapError(err error) APIError {
-	if carrier, ok := AsType[StatusCarrier](err); ok {
-		return APIError{
+// MapError maps application-defined errors that implement domain.StatusCarrier
+// to an HttpError which can be presented to the HTTP layer.
+// It extracts wrapped errors so implementation details don't leak to the client.
+//
+// If the given err does not implement domain.StatusCarrier, defaults to 500 Internal Server Error .
+func MapError(err error) HttpError {
+	if carrier, ok := errors.AsType[domain.StatusCarrier](err); ok {
+		return HttpError{
 			Message: carrier.Error(),
 			Status:  MapHTTPStatus(carrier.Type()),
 		}
 	}
 
-	return APIError{
+	return HttpError{
 		Message: "internal server error",
 		Status:  http.StatusInternalServerError,
 	}
 }
 
-func MapHTTPStatus(errType string) int {
+func MapHTTPStatus(errType domain.ErrorType) int {
 	switch errType {
-	case domain.ErrorTypeLogical.String():
+	case domain.ErrorTypeLogical:
 		return http.StatusUnprocessableEntity
 
-	case domain.ErrorTypeAuthorization.String():
+	case domain.ErrorTypeAuthorization:
 		return http.StatusUnauthorized
 
-	case domain.ErrorTypeValidation.String():
+	case domain.ErrorTypeValidation:
 		return http.StatusBadRequest
 
-	case domain.ErrorTypeConflict.String():
+	case domain.ErrorTypeConflict:
 		return http.StatusConflict
 
-	case domain.ErrorTypeRetrieval.String():
+	case domain.ErrorTypeRetrieval:
 		return http.StatusNotFound
-
-	case ErrorTypeParsing.String():
-		return http.StatusBadRequest
 
 	default:
 		return http.StatusInternalServerError
 	}
-}
-
-func AsType[T any](err error) (T, bool) {
-	var target T
-	if errors.As(err, &target) {
-		return target, true
-	}
-	return target, false
 }
