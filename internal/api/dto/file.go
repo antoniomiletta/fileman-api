@@ -8,8 +8,8 @@ type MoveFileRequest struct {
 	NewParentID uuid.UUID `json:"new_parent_id"`
 }
 
-type DeleteFileRequest struct {
-	ID uuid.UUID `json:"id"`
+type RenameFileRequest struct {
+	NewName string `json:"new_name"`
 }
 
 const (

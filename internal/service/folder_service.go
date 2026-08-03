@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -22,32 +23,31 @@ func NewFolderService(repo ports.FolderRepository) *FolderService {
 	}
 }
 
-type CreateFolderInput struct {
-	OwnerID  uuid.UUID
-	ParentID *uuid.UUID
-	Name     string
-}
-
-func (s *FolderService) CreateFolder(ctx context.Context, input CreateFolderInput) error {
-	if err := folder.ValidateFolderName(input.Name); err != nil {
-		return err
-	}
-
-	if input.ParentID == nil {
+func (s *FolderService) CreateFolder(ctx context.Context, parentID *uuid.UUID, name string) error {
+	if parentID == nil {
 		return folder.ErrCannotCreateNewRootFolder
 	}
 
-	parent, err := s.repo.FindByID(ctx, *input.ParentID)
+	callerID, err := reqctx.CallerIDFrom(ctx)
 	if err != nil {
-		return fmt.Errorf("%w: parent not found", err)
+		return err
 	}
 
-	if parent.OwnerID != input.OwnerID {
+	parent, err := s.repo.FindByID(ctx, *parentID)
+	if err != nil {
+		return err
+	}
+
+	if parent.OwnerID != callerID {
 		return fmt.Errorf("%w: cannot create on specified parent", auth.ErrForbidden)
 	}
 
-	clash, err := s.repo.FindByNameInParent(ctx, input.Name, *input.ParentID)
-	if err != nil {
+	if err := folder.ValidateFolderName(name); err != nil {
+		return err
+	}
+
+	clash, err := s.repo.FindByNameInParent(ctx, name, *parentID)
+	if err != nil && !errors.Is(err, folder.ErrFolderNotFound) {
 		return err
 	}
 	if clash != nil {
@@ -56,9 +56,9 @@ func (s *FolderService) CreateFolder(ctx context.Context, input CreateFolderInpu
 
 	f := folder.Folder{
 		ID:       uuid.New(),
-		OwnerID:  input.OwnerID,
-		ParentID: input.ParentID,
-		Name:     strings.TrimSpace(input.Name),
+		OwnerID:  callerID,
+		ParentID: parentID,
+		Name:     strings.TrimSpace(name),
 	}
 
 	return s.repo.Create(ctx, &f)
@@ -131,7 +131,7 @@ func (s *FolderService) MoveFolder(ctx context.Context, id, newParentID uuid.UUI
 	}
 
 	clash, err := s.repo.FindByNameInParent(ctx, f.Name, newParentID)
-	if err != nil {
+	if err != nil && !errors.Is(err, folder.ErrFolderNotFound) {
 		return err
 	}
 	if clash != nil {
@@ -139,6 +139,28 @@ func (s *FolderService) MoveFolder(ctx context.Context, id, newParentID uuid.UUI
 	}
 
 	return s.repo.Move(ctx, id, newParentID)
+}
+
+func (s *FolderService) RenameFolder(ctx context.Context, id uuid.UUID, newName string) error {
+	callerID, err := reqctx.CallerIDFrom(ctx)
+	if err != nil {
+		return err
+	}
+
+	f, err := s.repo.FindByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	if callerID != f.OwnerID {
+		return fmt.Errorf("%w: cannot rename specified specified folder", auth.ErrForbidden)
+	}
+
+	if err := folder.ValidateFolderName(newName); err != nil {
+		return err
+	}
+
+	return s.repo.Rename(ctx, id, newName)
 }
 
 func (s *FolderService) DeleteFolder(ctx context.Context, id uuid.UUID) error {

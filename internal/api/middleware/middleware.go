@@ -14,11 +14,13 @@ import (
 
 type Middleware struct {
 	authn *authenticator.Authenticator
+	resp  *transport.Responder
 }
 
-func New(a *authenticator.Authenticator) *Middleware {
+func New(authn *authenticator.Authenticator, resp *transport.Responder) *Middleware {
 	return &Middleware{
-		authn: a,
+		authn: authn,
+		resp:  resp,
 	}
 }
 
@@ -26,19 +28,20 @@ func (m *Middleware) Auth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token, err := extractToken(r)
 		if err != nil {
-			transport.WriteError(w, err)
+			m.resp.WriteError(w, err)
 			return
 		}
 
 		claims, err := m.authn.VerifyToken(token)
 		if err != nil {
-			transport.WriteError(w, err)
+			m.resp.WriteError(w, err)
 			return
 		}
 
 		callerID, err := uuid.Parse(claims.Subject)
 		if err != nil {
-			transport.WriteError(w, auth.ErrUnauthenticated)
+			m.resp.WriteError(w, auth.ErrUnauthenticated)
+			return
 		}
 
 		ctx := reqctx.WithCallerID(r.Context(), callerID)
@@ -49,14 +52,14 @@ func (m *Middleware) Auth(next http.Handler) http.Handler {
 
 func extractToken(r *http.Request) (string, error) {
 	h := r.Header.Get("Authorization")
-	prefix := "Bearer"
+	prefix := "Bearer "
 
 	if h == "" {
 		return "", auth.ErrUnauthenticated
 	}
 
 	if !strings.HasPrefix(h, prefix) {
-		return "", fmt.Errorf("%w: expected Bearer {token}", transport.ErrMalformedToken)
+		return "", fmt.Errorf("%w: expected Bearer {token}", authenticator.ErrInvalidToken)
 	}
 
 	return strings.TrimPrefix(h, prefix), nil

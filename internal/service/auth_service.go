@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"strings"
 
 	"github.com/antoniomiletta/fileman/internal/adapter/db/postgres"
@@ -44,7 +45,7 @@ func (s *AuthService) CreateUser(ctx context.Context, input CreateUserInput) err
 	}
 
 	existing, err := s.authRepo.FindByEmail(ctx, input.Email)
-	if err != nil {
+	if err != nil && !errors.Is(err, auth.ErrUserNotFound) {
 		return err
 	}
 	if existing != nil {
@@ -85,7 +86,7 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (string
 	}
 
 	user, err := s.authRepo.FindByEmail(ctx, email)
-	if err != nil || user == nil {
+	if err != nil && errors.Is(err, auth.ErrUserNotFound) {
 		return "", auth.ErrInvalidCredentials
 	}
 

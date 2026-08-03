@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+
 	"strings"
 
 	"github.com/antoniomiletta/fileman/internal/domain/auth"
@@ -31,7 +32,6 @@ func NewFileService(fileRepo ports.FileRepository, folderRepo ports.FolderReposi
 }
 
 type CreateFileInput struct {
-	OwnerID  uuid.UUID
 	ParentID uuid.UUID
 	Name     string
 	MIMEType string
@@ -39,17 +39,22 @@ type CreateFileInput struct {
 }
 
 func (s *FileService) CreateFile(ctx context.Context, input CreateFileInput, fileContent io.Reader) error {
-	if err := file.ValidateFileName(input.Name); err != nil {
+	callerID, err := reqctx.CallerIDFrom(ctx)
+	if err != nil {
 		return err
 	}
 
 	parent, err := s.folderRepo.FindByID(ctx, input.ParentID)
 	if err != nil {
-		return fmt.Errorf("%w: parent not found", err)
+		return err
 	}
 
-	if parent.OwnerID != input.OwnerID {
+	if parent.OwnerID != callerID {
 		return fmt.Errorf("%w: cannot create on specified parent", auth.ErrForbidden)
+	}
+
+	if err := file.ValidateFileName(input.Name); err != nil {
+		return err
 	}
 
 	clash, err := s.fileRepo.FindByNameInParent(ctx, input.Name, input.ParentID)
@@ -62,20 +67,20 @@ func (s *FileService) CreateFile(ctx context.Context, input CreateFileInput, fil
 
 	resourceType, ok := storage.Classify(input.MIMEType)
 	if !ok {
-		return file.ErrFileTypeNotAllowed
+		return fmt.Errorf("%w: %s", file.ErrFileTypeNotAllowed, input.MIMEType)
 	}
 
 	id := uuid.New()
 
 	f := file.File{
 		ID:       id,
-		OwnerID:  input.OwnerID,
+		OwnerID:  callerID,
 		ParentID: input.ParentID,
 		Name:     strings.TrimSpace(input.Name),
 		MIMEType: input.MIMEType,
 		Size:     input.Size,
 		StorageKey: storage.GenerateFileKey(storage.FileKeyParams{
-			OwnerID:      input.OwnerID,
+			OwnerID:      callerID,
 			ResourceType: resourceType,
 			FileID:       id,
 		}),
@@ -126,6 +131,28 @@ func (s *FileService) MoveFile(ctx context.Context, id, newParentID uuid.UUID) e
 	}
 
 	return s.fileRepo.Move(ctx, id, newParentID)
+}
+
+func (s *FileService) RenameFile(ctx context.Context, id uuid.UUID, newName string) error {
+	callerID, err := reqctx.CallerIDFrom(ctx)
+	if err != nil {
+		return err
+	}
+
+	f, err := s.fileRepo.FindByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	if callerID != f.OwnerID {
+		return fmt.Errorf("%w: cannot rename specified specified file", auth.ErrForbidden)
+	}
+
+	if err := file.ValidateFileName(newName); err != nil {
+		return err
+	}
+
+	return s.fileRepo.Rename(ctx, id, newName)
 }
 
 func (s *FileService) DeleteFile(ctx context.Context, id uuid.UUID) error {

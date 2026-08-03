@@ -2,6 +2,7 @@ package storage
 
 import (
 	"fmt"
+	"mime"
 
 	"github.com/google/uuid"
 )
@@ -46,9 +47,13 @@ var mimeResourceMap = map[string]ResourceType{
 
 // Classify reports whether the provided MIME type maps to a valid
 // resource type in storage, returning the resource type if it does.
-// It can also be used to determine whether the MIME type is accepted by the system,
+// It can be used to determine if the MIME type is accepted by the system,
 // since every allowed MIME type is mapped and all mapped types are allowed.
-func Classify(mimeType string) (ResourceType, bool) {
+func Classify(mediaType string) (ResourceType, bool) {
+	mimeType, _, err := mime.ParseMediaType(mediaType)
+	if err != nil {
+		return "", false
+	}
 	rt, ok := mimeResourceMap[mimeType]
 	return rt, ok
 }

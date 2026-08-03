@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"log/slog"
 	"os"
 
 	"github.com/antoniomiletta/fileman/config"
@@ -9,6 +10,7 @@ import (
 	"github.com/antoniomiletta/fileman/internal/adapter/storage/awss3"
 	"github.com/antoniomiletta/fileman/internal/adapter/storage/local"
 	"github.com/antoniomiletta/fileman/internal/api"
+	"github.com/antoniomiletta/fileman/internal/api/transport"
 	"github.com/antoniomiletta/fileman/internal/pkg/authenticator"
 	"github.com/antoniomiletta/fileman/internal/ports"
 	"github.com/antoniomiletta/fileman/internal/service"
@@ -31,6 +33,7 @@ func main() {
 	txRunner := postgres.NewTxRunner(db.Pool())
 
 	authn := authenticator.NewAuthenticator(cfg.Auth)
+	resp := transport.NewResponder(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 
 	authSvc := service.NewAuthService(authRepo, txRunner, authn)
 	folderSvc := service.NewFolderService(folderRepo)
@@ -42,9 +45,10 @@ func main() {
 		FolderSvc: folderSvc,
 		FileSvc:   fileSvc,
 		Authn:     authn,
+		Resp:      resp,
 	})
 
-	if err := svr.Serve(); err != nil {
+	if err := svr.Serve(cfg.Server); err != nil {
 		log.Fatalf("failed to start HTTP server: %v", err)
 	}
 }
@@ -66,7 +70,7 @@ func initStorage(cfg config.StorageConfig) ports.StorageBackend {
 		if cfg.LocalConfig.LocalRoot == "" {
 			log.Fatalf("STORAGE_BACKEND=local but LOCAL_STORAGE_ROOT is not set")
 		}
-		os.MkdirAll(cfg.LocalConfig.LocalRoot, 0o755) // rwxr-xr-x
+		os.MkdirAll(cfg.LocalConfig.LocalRoot, local.DataDirPerm) // rwxr-xr-x
 		store = local.NewLocalStorage(cfg.LocalConfig)
 	case "s3":
 		if cfg.S3Config.S3Bucket == "" {

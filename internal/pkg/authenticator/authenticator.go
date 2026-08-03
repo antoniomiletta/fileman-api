@@ -1,10 +1,10 @@
 package authenticator
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/antoniomiletta/fileman/config"
-	"github.com/antoniomiletta/fileman/internal/domain"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -15,17 +15,6 @@ type Authenticator struct {
 type Claims struct {
 	jwt.RegisteredClaims
 }
-
-var (
-	ErrUnexpectedAlg = domain.ApplicationError{
-		Msg: "unexpected signing algorithm",
-		Typ: domain.ErrorTypeValidation,
-	}
-	ErrInvalidToken = domain.ApplicationError{
-		Msg: "invalid authentication token",
-		Typ: domain.ErrorTypeValidation,
-	}
-)
 
 func NewAuthenticator(cfg config.AuthConfig) *Authenticator {
 	return &Authenticator{cfg: cfg}
@@ -45,7 +34,12 @@ func (a *Authenticator) GenerateToken(userID string) (string, error) {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-	return token.SignedString(a.cfg.JWTSecret)
+	signed, err := token.SignedString([]byte(a.cfg.JWTSecret))
+	if err != nil {
+		return "", fmt.Errorf("authenticator: sign token: %w", err)
+	}
+
+	return signed, nil
 }
 
 // VerifyToken parses and validates the given token string, returning its claims.
@@ -57,10 +51,10 @@ func (a *Authenticator) VerifyToken(tokenString string) (*Claims, error) {
 			return nil, ErrUnexpectedAlg
 		}
 
-		return a.cfg.JWTSecret, nil
+		return []byte(a.cfg.JWTSecret), nil
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("authenticator: verify: parse token: %w", err)
 	}
 	if !token.Valid {
 		return nil, ErrInvalidToken

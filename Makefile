@@ -33,6 +33,10 @@ docker-up:
 docker-down:
 	docker compose down
 
+# wipe volumes
+docker-down-v:
+	docker compose down -v
+
 docker-ps:
 	docker compose ps
 

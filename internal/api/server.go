@@ -1,9 +1,11 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/antoniomiletta/fileman/config"
+	"github.com/antoniomiletta/fileman/internal/api/transport"
 	"github.com/antoniomiletta/fileman/internal/pkg/authenticator"
 	"github.com/antoniomiletta/fileman/internal/service"
 )
@@ -14,6 +16,7 @@ type Server struct {
 	FileSvc    *service.FileService
 	FolderSvc  *service.FolderService
 	Authn      *authenticator.Authenticator
+	Resp       *transport.Responder
 }
 
 type ServerDeps struct {
@@ -22,6 +25,7 @@ type ServerDeps struct {
 	FolderSvc *service.FolderService
 	FileSvc   *service.FileService
 	Authn     *authenticator.Authenticator
+	Resp      *transport.Responder
 }
 
 func NewServer(deps ServerDeps) *Server {
@@ -30,6 +34,7 @@ func NewServer(deps ServerDeps) *Server {
 		FolderSvc: deps.FolderSvc,
 		FileSvc:   deps.FileSvc,
 		Authn:     deps.Authn,
+		Resp:      deps.Resp,
 	}
 
 	s.HttpServer = &http.Server{
@@ -40,6 +45,7 @@ func NewServer(deps ServerDeps) *Server {
 	return s
 }
 
-func (s *Server) Serve() error {
+func (s *Server) Serve(cfg config.ServerConfig) error {
+	fmt.Printf("listening on %s...\n", cfg.Port)
 	return s.HttpServer.ListenAndServe()
 }

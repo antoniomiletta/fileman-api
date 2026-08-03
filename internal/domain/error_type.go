@@ -3,11 +3,12 @@ package domain
 type ErrorType string
 
 const (
-	ErrorTypeLogical       ErrorType = "LOGICAL"       // core application logic was infringed, resulting in a logical impossibility
-	ErrorTypeAuthorization ErrorType = "AUTHORIZATION" // not authorized to perform action
-	ErrorTypeValidation    ErrorType = "VALIDATION"    // data or its format is invalid.
-	ErrorTypeConflict      ErrorType = "CONFLICT"      // data conflicts with existing data
-	ErrorTypeRetrieval     ErrorType = "RETRIEVAL"     // failed to retrieve requested data
+	ErrorTypeLogical        ErrorType = "LOGICAL"        // core application logic was infringed, resulting in a logical impossibility
+	ErrorTypeAuthentication ErrorType = "AUTHENTICATION" // not authenticated
+	ErrorTypeAuthorization  ErrorType = "AUTHORIZATION"  // not authorized to perform action
+	ErrorTypeValidation     ErrorType = "VALIDATION"     // data or its format is invalid.
+	ErrorTypeConflict       ErrorType = "CONFLICT"       // data conflicts with existing data
+	ErrorTypeRetrieval      ErrorType = "RETRIEVAL"      // failed to retrieve requested data
 )
 
 // StatusCarrier should be implemented by all application-defined errors.

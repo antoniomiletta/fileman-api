@@ -17,11 +17,11 @@ var (
 	}
 	ErrInvalidCredentials = domain.ApplicationError{
 		Msg: "invalid credentials",
-		Typ: domain.ErrorTypeAuthorization,
+		Typ: domain.ErrorTypeAuthentication,
 	}
 	ErrCredentialsRequired = domain.ApplicationError{
 		Msg: "email and password are required",
-		Typ: domain.ErrorTypeValidation,
+		Typ: domain.ErrorTypeAuthentication,
 	}
 	ErrEmailTaken = domain.ApplicationError{
 		Msg: "email already taken",

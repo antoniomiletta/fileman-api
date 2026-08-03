@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/antoniomiletta/fileman/internal/api/dto"
@@ -10,12 +9,14 @@ import (
 )
 
 type AuthHandler struct {
-	svc *service.AuthService
+	svc  *service.AuthService
+	resp *transport.Responder
 }
 
-func NewAuthHandler(svc *service.AuthService) *AuthHandler {
+func NewAuthHandler(svc *service.AuthService, resp *transport.Responder) *AuthHandler {
 	return &AuthHandler{
-		svc: svc,
+		svc:  svc,
+		resp: resp,
 	}
 }
 
@@ -23,8 +24,8 @@ func (h *AuthHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	var req dto.SignUpRequest
 
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		transport.WriteError(w, transport.ErrMalformedJSON)
+	if err := transport.DecodeJSON(r, &req); err != nil {
+		h.resp.WriteError(w, transport.ErrInvalidJSON)
 		return
 	}
 	defer r.Body.Close()
@@ -33,26 +34,27 @@ func (h *AuthHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 		Email:    req.Email,
 		Password: req.Password,
 	}); err != nil {
-		transport.WriteError(w, err)
+		h.resp.WriteError(w, err)
 		return
 	}
+	h.resp.WriteStatus(w, http.StatusOK)
 }
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	var req dto.LoginRequest
 
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		transport.WriteError(w, transport.ErrMalformedJSON)
+	if err := transport.DecodeJSON(r, &req); err != nil {
+		h.resp.WriteError(w, transport.ErrInvalidJSON)
 		return
 	}
 	defer r.Body.Close()
 
 	token, err := h.svc.Login(ctx, req.Email, req.Password)
 	if err != nil {
-		transport.WriteError(w, err)
+		h.resp.WriteError(w, err)
 		return
 	}
 
-	transport.WriteJSON(w, http.StatusOK, token)
+	h.resp.WriteJSON(w, http.StatusOK, token)
 }

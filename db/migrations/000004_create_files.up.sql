@@ -6,6 +6,8 @@ CREATE TABLE IF NOT EXISTS files (
     size         BIGINT NOT NULL DEFAULT 0,
     mime_type    TEXT NOT NULL DEFAULT 'application/octet-stream',
     storage_key  TEXT NOT NULL,
+    upload_status TEXT NOT NULL DEFAULT 'pending'
+        CONSTRAINT chk_files_upload_status CHECK (upload_status IN ('pending', 'complete')),
     created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
@@ -19,3 +21,7 @@ CREATE TABLE IF NOT EXISTS files (
 
 CREATE INDEX IF NOT EXISTS idx_files_parent_id ON files(parent_id);
 CREATE INDEX IF NOT EXISTS idx_files_owner_id  ON files(owner_id);
+
+CREATE INDEX IF NOT EXISTS idx_files_upload_status_pending
+    ON files (updated_at)
+    WHERE upload_status <> 'complete';

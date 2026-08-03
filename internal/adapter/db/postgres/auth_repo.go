@@ -41,7 +41,7 @@ func (r *AuthRepository) FindByEmail(ctx context.Context, email string) (*auth.U
 		`
 
 	u := &auth.User{}
-	err := r.db.QueryRow(ctx, query, email).Scan(u.ID, u.Email, u.Password, u.CreatedAt)
+	err := r.db.QueryRow(ctx, query, email).Scan(&u.ID, &u.Email, &u.Password, &u.CreatedAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, auth.ErrUserNotFound

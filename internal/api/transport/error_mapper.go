@@ -16,7 +16,7 @@ type HttpError struct {
 // to an HttpError which can be presented to the HTTP layer.
 // It extracts wrapped errors so implementation details don't leak to the client.
 //
-// If the given err does not implement domain.StatusCarrier, defaults to 500 Internal Server Error .
+// If the given err does not implement domain.StatusCarrier, defaults to 500 Internal Server Error.
 func MapError(err error) HttpError {
 	if carrier, ok := errors.AsType[domain.StatusCarrier](err); ok {
 		return HttpError{
@@ -36,8 +36,11 @@ func MapHTTPStatus(errType domain.ErrorType) int {
 	case domain.ErrorTypeLogical:
 		return http.StatusUnprocessableEntity
 
-	case domain.ErrorTypeAuthorization:
+	case domain.ErrorTypeAuthentication:
 		return http.StatusUnauthorized
+
+	case domain.ErrorTypeAuthorization:
+		return http.StatusForbidden
 
 	case domain.ErrorTypeValidation:
 		return http.StatusBadRequest

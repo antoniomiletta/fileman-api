@@ -34,7 +34,7 @@ var (
 	}
 
 	ErrFileTypeNotAllowed = domain.ApplicationError{
-		Msg: "this file type is not allowed",
+		Msg: "file type is not allowed",
 		Typ: domain.ErrorTypeValidation,
 	}
 

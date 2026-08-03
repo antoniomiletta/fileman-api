@@ -109,7 +109,7 @@ func listChildFolders(ctx context.Context, db Querier, parentID uuid.UUID) ([]*f
 }
 func listChildFiles(ctx context.Context, db Querier, parentID uuid.UUID) ([]*file.File, error) {
 	const query = `
-		SELECT id, owner_id, parent_id, name, mime_type, size, storage_key, status, created_at, updated_at
+		SELECT id, owner_id, parent_id, name, mime_type, size, storage_key, upload_status, created_at, updated_at
 		FROM files
 		WHERE parent_id = $1
 		ORDER BY name ASC
@@ -117,7 +117,7 @@ func listChildFiles(ctx context.Context, db Querier, parentID uuid.UUID) ([]*fil
 
 	rows, err := db.Query(ctx, query, parentID)
 	if err != nil {
-		return nil, fmt.Errorf("postgres: list child files: %w", err)
+		return nil, fmt.Errorf("postgres: list child files: query files: %w", err)
 	}
 	defer rows.Close()
 
@@ -136,13 +136,13 @@ func listChildFiles(ctx context.Context, db Querier, parentID uuid.UUID) ([]*fil
 			&f.CreatedAt,
 			&f.UpdatedAt,
 		); err != nil {
-			return nil, fmt.Errorf("postgres: scan child file: %w", err)
+			return nil, fmt.Errorf("postgres: list child files: scan files: %w", err)
 		}
 		files = append(files, f)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("postgres: iterate child files: %w", err)
+		return nil, fmt.Errorf("postgres: list child files: iterate files: %w", err)
 	}
 
 	return files, nil
@@ -161,6 +161,28 @@ func (r *FolderRepository) Move(ctx context.Context, id, newParentID uuid.UUID) 
 			return folder.ErrFolderNameConflict
 		}
 		return fmt.Errorf("postgres: move folder: %w", err)
+	}
+
+	if tag.RowsAffected() == 0 {
+		return folder.ErrFolderNotFound
+	}
+
+	return nil
+}
+
+func (r *FolderRepository) Rename(ctx context.Context, id uuid.UUID, newName string) error {
+	const query = `
+		UPDATE folders
+		SET name = $1, updated_at = NOW()
+		WHERE id = $2
+		`
+
+	tag, err := r.db.Exec(ctx, query, newName, id)
+	if err != nil {
+		if isUniqueViolation(err) {
+			return folder.ErrFolderNameConflict
+		}
+		return fmt.Errorf("postgres: rename folder: %w", err)
 	}
 
 	if tag.RowsAffected() == 0 {

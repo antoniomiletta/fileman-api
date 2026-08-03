@@ -20,7 +20,7 @@ func NewFileRepository(q Querier) *FileRepository {
 
 func (r *FileRepository) Create(ctx context.Context, f *file.File) error {
 	const query = `
-		INSERT INTO files (id, owner_id, parent_id, name, mime_type, size, storage_key, status, created_at, updated_at)
+		INSERT INTO files (id, owner_id, parent_id, name, mime_type, size, storage_key, upload_status, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
 		`
 
@@ -66,6 +66,28 @@ func (r *FileRepository) Move(ctx context.Context, id, newParentID uuid.UUID) er
 	return nil
 }
 
+func (r *FileRepository) Rename(ctx context.Context, id uuid.UUID, newName string) error {
+	const query = `
+		UPDATE files
+		SET name = $1, updated_at = NOW()
+		WHERE id = $2
+		`
+
+	tag, err := r.db.Exec(ctx, query, newName, id)
+	if err != nil {
+		if isUniqueViolation(err) {
+			return file.ErrFileNameConflict
+		}
+		return fmt.Errorf("postgres: rename file: %w", err)
+	}
+
+	if tag.RowsAffected() == 0 {
+		return file.ErrFileNotFound
+	}
+
+	return nil
+}
+
 func (r *FileRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	const query = `
 		DELETE FROM files
@@ -86,7 +108,7 @@ func (r *FileRepository) Delete(ctx context.Context, id uuid.UUID) error {
 
 func (r *FileRepository) FindByID(ctx context.Context, id uuid.UUID) (*file.File, error) {
 	const query = `
-		SELECT id, owner_id, parent_id, name, mime_type, size, storage_key, status, created_at, updated_at
+		SELECT id, owner_id, parent_id, name, mime_type, size, storage_key, upload_status, created_at, updated_at
 		FROM files
 		WHERE id = $1
 		`
@@ -116,7 +138,7 @@ func (r *FileRepository) FindByID(ctx context.Context, id uuid.UUID) (*file.File
 
 func (r *FileRepository) FindByNameInParent(ctx context.Context, name string, parentID uuid.UUID) (*file.File, error) {
 	const query = `
-		SELECT id, owner_id, parent_id, name, mime_type, size, storage_key, status, created_at, updated_at
+		SELECT id, owner_id, parent_id, name, mime_type, size, storage_key, upload_status, created_at, updated_at
 		FROM files
 		WHERE name = $1
 		AND parent_id = $2
