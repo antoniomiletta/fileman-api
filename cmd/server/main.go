@@ -6,9 +6,9 @@ import (
 	"os"
 
 	"github.com/antoniomiletta/fileman/config"
-	"github.com/antoniomiletta/fileman/internal/adapter/db/postgres"
-	"github.com/antoniomiletta/fileman/internal/adapter/storage/awss3"
-	"github.com/antoniomiletta/fileman/internal/adapter/storage/local"
+	"github.com/antoniomiletta/fileman/internal/adapters/db/pg"
+	"github.com/antoniomiletta/fileman/internal/adapters/storage/awss3"
+	"github.com/antoniomiletta/fileman/internal/adapters/storage/local"
 	"github.com/antoniomiletta/fileman/internal/api"
 	"github.com/antoniomiletta/fileman/internal/api/transport"
 	"github.com/antoniomiletta/fileman/internal/pkg/authenticator"
@@ -27,10 +27,10 @@ func main() {
 
 	store := initStorage(cfg.Storage)
 
-	authRepo := postgres.NewAuthRepository(db)
-	folderRepo := postgres.NewFolderRepository(db)
-	fileRepo := postgres.NewFileRepository(db)
-	txRunner := postgres.NewTxRunner(db.Pool())
+	authRepo := pg.NewAuthRepository(db)
+	folderRepo := pg.NewFolderRepository(db)
+	fileRepo := pg.NewFileRepository(db)
+	txRunner := pg.NewTxRunner(db.Pool())
 
 	authn := authenticator.NewAuthenticator(cfg.Auth)
 	resp := transport.NewResponder(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
@@ -53,8 +53,8 @@ func main() {
 	}
 }
 
-func initDb(cfg config.DBConfig) *postgres.DB {
-	db, err := postgres.Connect(cfg)
+func initDb(cfg config.DBConfig) *pg.DB {
+	db, err := pg.Connect(cfg)
 	if err != nil {
 		log.Fatalf("failed to connect to database: %v", err)
 	}

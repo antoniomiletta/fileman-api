@@ -20,14 +20,14 @@ import (
 type FileService struct {
 	fileRepo   ports.FileRepository
 	folderRepo ports.FolderRepository
-	storage    ports.StorageBackend
+	store      ports.StorageBackend
 }
 
-func NewFileService(fileRepo ports.FileRepository, folderRepo ports.FolderRepository, storage ports.StorageBackend) *FileService {
+func NewFileService(fileRepo ports.FileRepository, folderRepo ports.FolderRepository, store ports.StorageBackend) *FileService {
 	return &FileService{
 		fileRepo:   fileRepo,
 		folderRepo: folderRepo,
-		storage:    storage,
+		store:      store,
 	}
 }
 
@@ -87,11 +87,11 @@ func (s *FileService) CreateFile(ctx context.Context, input CreateFileInput, fil
 		UploadStatus: file.UploadStatusPending,
 	}
 
-	if err := s.storage.Upload(ctx, f.StorageKey, fileContent, f.Size); err != nil {
+	if err := s.fileRepo.Create(ctx, &f); err != nil {
 		return err
 	}
 
-	return s.fileRepo.Create(ctx, &f)
+	return s.store.Upload(ctx, f.StorageKey, fileContent, f.Size)
 }
 
 func (s *FileService) MoveFile(ctx context.Context, id, newParentID uuid.UUID) error {
@@ -145,7 +145,7 @@ func (s *FileService) RenameFile(ctx context.Context, id uuid.UUID, newName stri
 	}
 
 	if callerID != f.OwnerID {
-		return fmt.Errorf("%w: cannot rename specified specified file", auth.ErrForbidden)
+		return fmt.Errorf("%w: cannot rename specified file", auth.ErrForbidden)
 	}
 
 	if err := file.ValidateFileName(newName); err != nil {

@@ -14,12 +14,12 @@ import (
 )
 
 type FolderService struct {
-	repo ports.FolderRepository
+	folderRepo ports.FolderRepository
 }
 
 func NewFolderService(repo ports.FolderRepository) *FolderService {
 	return &FolderService{
-		repo: repo,
+		folderRepo: repo,
 	}
 }
 
@@ -33,7 +33,7 @@ func (s *FolderService) CreateFolder(ctx context.Context, parentID *uuid.UUID, n
 		return err
 	}
 
-	parent, err := s.repo.FindByID(ctx, *parentID)
+	parent, err := s.folderRepo.FindByID(ctx, *parentID)
 	if err != nil {
 		return err
 	}
@@ -46,7 +46,7 @@ func (s *FolderService) CreateFolder(ctx context.Context, parentID *uuid.UUID, n
 		return err
 	}
 
-	clash, err := s.repo.FindByNameInParent(ctx, name, *parentID)
+	clash, err := s.folderRepo.FindByNameInParent(ctx, name, *parentID)
 	if err != nil && !errors.Is(err, folder.ErrFolderNotFound) {
 		return err
 	}
@@ -61,7 +61,7 @@ func (s *FolderService) CreateFolder(ctx context.Context, parentID *uuid.UUID, n
 		Name:     strings.TrimSpace(name),
 	}
 
-	return s.repo.Create(ctx, &f)
+	return s.folderRepo.Create(ctx, &f)
 }
 
 func (s *FolderService) ListChildren(ctx context.Context, folderID uuid.UUID) (*folder.FolderContent, error) {
@@ -70,7 +70,7 @@ func (s *FolderService) ListChildren(ctx context.Context, folderID uuid.UUID) (*
 		return nil, err
 	}
 
-	f, err := s.repo.FindByID(ctx, folderID)
+	f, err := s.folderRepo.FindByID(ctx, folderID)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func (s *FolderService) ListChildren(ctx context.Context, folderID uuid.UUID) (*
 		return nil, fmt.Errorf("%w: cannot access contents of specified folder", auth.ErrForbidden)
 	}
 
-	return s.repo.ListChildren(ctx, folderID)
+	return s.folderRepo.ListChildren(ctx, folderID)
 }
 
 func (s *FolderService) MoveFolder(ctx context.Context, id, newParentID uuid.UUID) error {
@@ -88,7 +88,7 @@ func (s *FolderService) MoveFolder(ctx context.Context, id, newParentID uuid.UUI
 		return err
 	}
 
-	f, err := s.repo.FindByID(ctx, id)
+	f, err := s.folderRepo.FindByID(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -109,7 +109,7 @@ func (s *FolderService) MoveFolder(ctx context.Context, id, newParentID uuid.UUI
 		return folder.ErrCannotMoveIntoItself
 	}
 
-	dest, err := s.repo.FindByID(ctx, newParentID)
+	dest, err := s.folderRepo.FindByID(ctx, newParentID)
 	if err != nil {
 		return err
 	}
@@ -124,13 +124,13 @@ func (s *FolderService) MoveFolder(ctx context.Context, id, newParentID uuid.UUI
 			return folder.ErrCannotMoveIntoDescendant
 		}
 
-		ancestor, err = s.repo.FindByID(ctx, *ancestor.ParentID)
+		ancestor, err = s.folderRepo.FindByID(ctx, *ancestor.ParentID)
 		if err != nil {
 			return err
 		}
 	}
 
-	clash, err := s.repo.FindByNameInParent(ctx, f.Name, newParentID)
+	clash, err := s.folderRepo.FindByNameInParent(ctx, f.Name, newParentID)
 	if err != nil && !errors.Is(err, folder.ErrFolderNotFound) {
 		return err
 	}
@@ -138,7 +138,7 @@ func (s *FolderService) MoveFolder(ctx context.Context, id, newParentID uuid.UUI
 		return folder.ErrFolderNameConflict
 	}
 
-	return s.repo.Move(ctx, id, newParentID)
+	return s.folderRepo.Move(ctx, id, newParentID)
 }
 
 func (s *FolderService) RenameFolder(ctx context.Context, id uuid.UUID, newName string) error {
@@ -147,20 +147,20 @@ func (s *FolderService) RenameFolder(ctx context.Context, id uuid.UUID, newName 
 		return err
 	}
 
-	f, err := s.repo.FindByID(ctx, id)
+	f, err := s.folderRepo.FindByID(ctx, id)
 	if err != nil {
 		return err
 	}
 
 	if callerID != f.OwnerID {
-		return fmt.Errorf("%w: cannot rename specified specified folder", auth.ErrForbidden)
+		return fmt.Errorf("%w: cannot rename specified folder", auth.ErrForbidden)
 	}
 
 	if err := folder.ValidateFolderName(newName); err != nil {
 		return err
 	}
 
-	return s.repo.Rename(ctx, id, newName)
+	return s.folderRepo.Rename(ctx, id, newName)
 }
 
 func (s *FolderService) DeleteFolder(ctx context.Context, id uuid.UUID) error {
@@ -169,7 +169,7 @@ func (s *FolderService) DeleteFolder(ctx context.Context, id uuid.UUID) error {
 		return err
 	}
 
-	f, err := s.repo.FindByID(ctx, id)
+	f, err := s.folderRepo.FindByID(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -182,5 +182,5 @@ func (s *FolderService) DeleteFolder(ctx context.Context, id uuid.UUID) error {
 		return folder.ErrCannotDeleteRootFolder
 	}
 
-	return s.repo.Delete(ctx, id)
+	return s.folderRepo.Delete(ctx, id)
 }

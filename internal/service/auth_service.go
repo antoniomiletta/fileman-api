@@ -5,7 +5,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/antoniomiletta/fileman/internal/adapter/db/postgres"
+	"github.com/antoniomiletta/fileman/internal/adapters/db/pg"
 	"github.com/antoniomiletta/fileman/internal/domain/auth"
 	"github.com/antoniomiletta/fileman/internal/pkg/authenticator"
 	"github.com/antoniomiletta/fileman/internal/ports"
@@ -14,11 +14,11 @@ import (
 
 type AuthService struct {
 	authRepo ports.AuthRepository
-	txRunner *postgres.TxRunner
+	txRunner *pg.TxRunner
 	authn    *authenticator.Authenticator
 }
 
-func NewAuthService(authRepo ports.AuthRepository, txRunner *postgres.TxRunner, authn *authenticator.Authenticator) *AuthService {
+func NewAuthService(authRepo ports.AuthRepository, txRunner *pg.TxRunner, authn *authenticator.Authenticator) *AuthService {
 	return &AuthService{
 		authRepo: authRepo,
 		txRunner: txRunner,
@@ -63,13 +63,13 @@ func (s *AuthService) CreateUser(ctx context.Context, input CreateUserInput) err
 		Password: hashed,
 	}
 
-	return s.txRunner.Run(ctx, func(q postgres.Querier) error {
-		authRepo := postgres.NewAuthRepository(q)
+	return s.txRunner.Run(ctx, func(q pg.Querier) error {
+		authRepo := pg.NewAuthRepository(q)
 		if err := authRepo.SignUp(ctx, &user); err != nil {
 			return err
 		}
 
-		folderRepo := postgres.NewFolderRepository(q)
+		folderRepo := pg.NewFolderRepository(q)
 		return folderRepo.CreateRoot(ctx, user.ID)
 	})
 }
