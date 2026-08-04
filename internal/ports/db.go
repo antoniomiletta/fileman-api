@@ -6,6 +6,7 @@ import (
 	"github.com/antoniomiletta/fileman/internal/domain/auth"
 	"github.com/antoniomiletta/fileman/internal/domain/file"
 	"github.com/antoniomiletta/fileman/internal/domain/folder"
+	"github.com/antoniomiletta/fileman/internal/jobs"
 	"github.com/google/uuid"
 )
 
@@ -32,4 +33,11 @@ type FolderRepository interface {
 	Delete(ctx context.Context, id uuid.UUID) error
 	FindByID(ctx context.Context, id uuid.UUID) (*folder.Folder, error)
 	FindByNameInParent(ctx context.Context, name string, parentID uuid.UUID) (*folder.Folder, error)
+}
+
+type CleanupJobRepository interface {
+	Enqueue(ctx context.Context, storageKey string) error
+	ClaimBatch(ctx context.Context, limit int) ([]jobs.CleanupJob, error)
+	MarkDone(ctx context.Context, id uuid.UUID) error
+	MarkFailed(ctx context.Context, id uuid.UUID, cause error) error
 }
