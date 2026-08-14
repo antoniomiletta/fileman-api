@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/antoniomiletta/fileman/config"
 	"github.com/antoniomiletta/fileman/internal/adapters/db/pg"
@@ -41,14 +42,8 @@ func main() {
 	resp := transport.NewResponder(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 
 	authSvc := service.NewAuthService(authRepo, txRunner, authn)
-	folderSvc := service.NewFolderService(folderRepo)
+	folderSvc := service.NewFolderService(folderRepo, txRunner)
 	fileSvc := service.NewFileService(fileRepo, folderRepo, store, txRunner, cleanupRepo)
-
-	// Cancellable context is passed to worker so it can shutdown gracefully.
-	cleanupWorker := workers.NewCleanupWorker(cleanupRepo, store, cfg.Cleanup)
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer cancel()
-	go cleanupWorker.Run(ctx)
 
 	svr := api.NewServer(api.ServerDeps{
 		Cfg:       cfg.Server,
@@ -59,9 +54,35 @@ func main() {
 		Resp:      resp,
 	})
 
-	if err := svr.Serve(cfg.Server); err != nil {
-		log.Fatalf("failed to start HTTP server: %v", err)
+	// Start cleanup worker
+	cleanupWorker := workers.NewCleanupWorker(cleanupRepo, store, cfg.Cleanup)
+	// Cancellable context is passed to worker so it can shutdown gracefully.
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
+	go cleanupWorker.Run(ctx)
+
+	// Start server
+	chServeErr := make(chan error, 1)
+	go func() {
+		chServeErr <- svr.Serve(cfg.Server)
+	}()
+
+	select {
+	case <-ctx.Done():
+		log.Printf("shutdown signal received, stopping server...")
+		// Server shutdown uses a fresh context, otherwise the cancellation signal
+		// would make the shutdown itself fail.
+		shutdownCtx, shutdownCancel := context.WithTimeout(ctx, time.Second*10)
+		defer shutdownCancel()
+		if err := svr.Shutdown(shutdownCtx); err != nil {
+			log.Printf("failed to shutdown server: %v", err)
+		}
+	case err := <-chServeErr:
+		if err != nil {
+			log.Fatalf("server error: %v", err)
+		}
 	}
+
 }
 
 func initDb(cfg config.DBConfig) *pg.DB {

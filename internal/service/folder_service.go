@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/antoniomiletta/fileman/internal/adapters/db/pg"
 	"github.com/antoniomiletta/fileman/internal/domain/auth"
 	"github.com/antoniomiletta/fileman/internal/domain/folder"
 	"github.com/antoniomiletta/fileman/internal/pkg/reqctx"
@@ -15,11 +16,13 @@ import (
 
 type FolderService struct {
 	folderRepo ports.FolderRepository
+	txRunner   *pg.TxRunner
 }
 
-func NewFolderService(repo ports.FolderRepository) *FolderService {
+func NewFolderService(repo ports.FolderRepository, txRunner *pg.TxRunner) *FolderService {
 	return &FolderService{
 		folderRepo: repo,
+		txRunner:   txRunner,
 	}
 }
 
@@ -182,5 +185,20 @@ func (s *FolderService) DeleteFolder(ctx context.Context, id uuid.UUID) error {
 		return folder.ErrCannotDeleteRootFolder
 	}
 
-	return s.folderRepo.Delete(ctx, id)
+	return s.txRunner.Run(ctx, func(q pg.Querier) error {
+		folderRepo := pg.NewFolderRepository(q)
+		cleanupRepo := pg.NewCleanupJobRepository(q)
+
+		keys, err := folderRepo.ListDescendantFileKeys(ctx, id)
+		if err != nil {
+			return err
+		}
+
+		for _, key := range keys {
+			cleanupRepo.Enqueue(ctx, key)
+		}
+
+		return folderRepo.Delete(ctx, id)
+	})
+
 }

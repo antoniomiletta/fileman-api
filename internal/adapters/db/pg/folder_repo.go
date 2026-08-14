@@ -261,3 +261,41 @@ func (r *FolderRepository) FindByNameInParent(ctx context.Context, name string, 
 
 	return f, nil
 }
+
+func (r *FolderRepository) ListDescendantFileKeys(ctx context.Context, id uuid.UUID) ([]string, error) {
+	const query = `
+		WITH RECURSIVE folder_tree AS (
+			SELECT id FROM folders WHERE id = $1
+			UNION ALL
+			SELECT f.id
+			FROM folders f
+			JOIN folder_tree ft ON f.parent_id = ft.id
+		)
+		SELECT files.storage_key
+		FROM files
+		WHERE files.parent_id IN (SELECT id FROM folder_tree)
+		`
+
+	rows, err := r.db.Query(ctx, query, id)
+	if err != nil {
+		return nil, fmt.Errorf("postgres: list file keys: %w", err)
+	}
+	defer rows.Close()
+
+	var keys []string
+	for rows.Next() {
+		var key string
+
+		if err := rows.Scan(&key); err != nil {
+			return nil, fmt.Errorf("postgres: scan file key: %w", err)
+		}
+
+		keys = append(keys, key)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("postgres: iterate file keys: %w", err)
+	}
+
+	return keys, nil
+}

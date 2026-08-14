@@ -166,3 +166,22 @@ func (r *FileRepository) FindByNameInParent(ctx context.Context, name string, pa
 
 	return f, nil
 }
+
+func (r *FileRepository) MarkUploaded(ctx context.Context, id uuid.UUID) error {
+	const query = `
+		UPDATE files
+		SET upload_status = $1, updated_at = NOW()
+		WHERE id = $2
+		`
+
+	tag, err := r.db.Exec(ctx, query, file.UploadStatusComplete, id)
+	if err != nil {
+		return fmt.Errorf("postgres: mark file uploaded: %w", err)
+	}
+
+	if tag.RowsAffected() == 0 {
+		return file.ErrFileNotFound
+	}
+
+	return nil
+}

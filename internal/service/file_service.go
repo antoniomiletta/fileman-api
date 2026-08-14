@@ -102,7 +102,11 @@ func (s *FileService) CreateFile(ctx context.Context, input CreateFileInput, fil
 		return err
 	}
 
-	return s.store.Upload(ctx, f.StorageKey, fileContent, f.Size)
+	if err := s.store.Upload(ctx, f.StorageKey, fileContent, f.Size); err != nil {
+		return err
+	}
+
+	return s.fileRepo.MarkUploaded(ctx, f.ID)
 }
 
 func (s *FileService) MoveFile(ctx context.Context, id, newParentID uuid.UUID) error {

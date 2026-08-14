@@ -54,6 +54,7 @@ func (w *CleanupWorker) processBatch(ctx context.Context) {
 		log.Printf("cleanup worker: claim batch: %v", err)
 		return
 	}
+	log.Printf("cleanup worker: jobs claimed: %d", len(batch))
 
 	inFlight := make(chan struct{}, w.cfg.MaxInFlight)
 
@@ -77,12 +78,10 @@ func (w *CleanupWorker) processBatch(ctx context.Context) {
 // runJob runs a single cleanup job and records whether it failed or succeeded.
 // Cancels on job timeout.
 func (w *CleanupWorker) runJob(ctx context.Context, job jobs.CleanupJob) {
+	log.Printf("cleanup worker: deleting object...")
+
 	jobCtx, jobCancel := context.WithTimeout(ctx, w.cfg.JobTimeout)
 	defer jobCancel()
-
-	// Recording the outcome always uses a fresh context, since an expired
-	// job context would fail to recordFailure and possibly fail to
-	// recordSuccess (if the job context expires between Delete succeeding and recordSuccess running).
 	if err := w.store.Delete(jobCtx, job.StorageKey); err != nil {
 		w.recordFailure(context.Background(), job, err)
 		return

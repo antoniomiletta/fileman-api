@@ -48,6 +48,7 @@ func (c *CleanupJobRepository) ClaimBatch(ctx context.Context, limit int) ([]job
 		LIMIT $1
 		FOR UPDATE SKIP LOCKED
 		)
+		RETURNING id, storage_key, attempts
 		`
 
 	rows, err := c.db.Query(ctx, query, limit)
@@ -67,9 +68,10 @@ func (c *CleanupJobRepository) ClaimBatch(ctx context.Context, limit int) ([]job
 
 		batch = append(batch, j)
 
-		if err := rows.Err(); err != nil {
-			return nil, fmt.Errorf("postgres: iterate cleanup jobs: %w", err)
-		}
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("postgres: iterate cleanup jobs: %w", err)
 	}
 
 	return batch, nil

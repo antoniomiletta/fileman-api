@@ -1,6 +1,8 @@
 package api
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -47,5 +49,15 @@ func NewServer(deps ServerDeps) *Server {
 
 func (s *Server) Serve(cfg config.ServerConfig) error {
 	fmt.Printf("listening on %s...\n", cfg.Port)
-	return s.HttpServer.ListenAndServe()
+
+	err := s.HttpServer.ListenAndServe()
+	if err != nil && !errors.Is(err, http.ErrServerClosed) {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Server) Shutdown(ctx context.Context) error {
+	return s.HttpServer.Shutdown(ctx)
 }

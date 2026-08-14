@@ -23,6 +23,7 @@ type FileRepository interface {
 	Delete(ctx context.Context, id uuid.UUID) error
 	FindByID(ctx context.Context, id uuid.UUID) (*file.File, error)
 	FindByNameInParent(ctx context.Context, name string, parentID uuid.UUID) (*file.File, error)
+	MarkUploaded(ctx context.Context, id uuid.UUID) error
 }
 
 type FolderRepository interface {
@@ -34,6 +35,7 @@ type FolderRepository interface {
 	Delete(ctx context.Context, id uuid.UUID) error
 	FindByID(ctx context.Context, id uuid.UUID) (*folder.Folder, error)
 	FindByNameInParent(ctx context.Context, name string, parentID uuid.UUID) (*folder.Folder, error)
+	ListDescendantFileKeys(ctx context.Context, id uuid.UUID) ([]string, error)
 }
 
 type CleanupJobRepository interface {
