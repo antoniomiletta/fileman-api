@@ -13,6 +13,7 @@ type Config struct {
 	DB      DBConfig
 	Storage StorageConfig
 	Auth    AuthConfig
+	Cleanup CleanupConfig
 }
 
 type ServerConfig struct {
@@ -58,6 +59,16 @@ type S3Config struct {
 type AuthConfig struct {
 	JWTSecret   string        `env:"JWT_SECRET"`
 	TokenExpiry time.Duration `env:"TOKEN_EXPIRY" envDefault:"24h"`
+}
+
+type CleanupConfig struct {
+	PollInterval    time.Duration `env:"CLEANUP_POLL_INTERVAL" envDefault:"10s"`
+	BatchSize       int           `env:"CLEANUP_BATCH_SIZE" envDefault:"20"`
+	MaxInFlight     int           `env:"CLEANUP_MAX_IN_FLIGHT" envDefault:"10"`
+	JobTimeout      time.Duration `env:"CLEANUP_JOB_TIMEOUT" envDefault:"30s"`
+	MaxAttempts     int           `env:"CLEANUP_MAX_ATTEMPTS" envDefault:"5"`
+	ReclaimInterval time.Duration `env:"CLEANUP_RECLAIM_INTERVAL" envDefault:"5m"`
+	StaleAfter      time.Duration `env:"CLEANUP_STALE_AFTER" envDefault:"10m"`
 }
 
 func Load() (*Config, error) {

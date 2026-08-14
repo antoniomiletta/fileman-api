@@ -2,6 +2,7 @@ package ports
 
 import (
 	"context"
+	"time"
 
 	"github.com/antoniomiletta/fileman/internal/domain/auth"
 	"github.com/antoniomiletta/fileman/internal/domain/file"
@@ -39,5 +40,6 @@ type CleanupJobRepository interface {
 	Enqueue(ctx context.Context, storageKey string) error
 	ClaimBatch(ctx context.Context, limit int) ([]jobs.CleanupJob, error)
 	MarkDone(ctx context.Context, id uuid.UUID) error
-	MarkFailed(ctx context.Context, id uuid.UUID, cause error) error
+	MarkFailed(ctx context.Context, id uuid.UUID, cause error, maxRetries int) error
+	Reclaim(ctx context.Context, staleTime time.Duration) (int64, error)
 }

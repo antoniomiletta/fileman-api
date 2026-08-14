@@ -6,24 +6,18 @@ import (
 	"sync"
 	"time"
 
+	"github.com/antoniomiletta/fileman/config"
 	"github.com/antoniomiletta/fileman/internal/jobs"
 	"github.com/antoniomiletta/fileman/internal/ports"
 )
 
-type CleanupConfig struct {
-	PollInterval time.Duration
-	BatchSize    int
-	MaxInFlight  int
-	JobTimeout   time.Duration
-}
-
 type CleanupWorker struct {
 	jobRepo ports.CleanupJobRepository
 	store   ports.StorageBackend
-	cfg     CleanupConfig
+	cfg     config.CleanupConfig
 }
 
-func NewCleanupWorker(jobRepo ports.CleanupJobRepository, store ports.StorageBackend, cfg CleanupConfig) *CleanupWorker {
+func NewCleanupWorker(jobRepo ports.CleanupJobRepository, store ports.StorageBackend, cfg config.CleanupConfig) *CleanupWorker {
 	return &CleanupWorker{
 		jobRepo: jobRepo,
 		store:   store,
@@ -31,18 +25,23 @@ func NewCleanupWorker(jobRepo ports.CleanupJobRepository, store ports.StorageBac
 	}
 }
 
-// Run polls for job batches until ctx is cancelled.
+// Run polls for job batches and reclaims stale jobs until ctx is cancelled.
 func (w *CleanupWorker) Run(ctx context.Context) {
-	ticker := time.NewTicker(w.cfg.PollInterval)
-	defer ticker.Stop()
+	pollTicker := time.NewTicker(w.cfg.PollInterval)
+	defer pollTicker.Stop()
+
+	reclaimTicker := time.NewTicker(w.cfg.ReclaimInterval)
+	defer reclaimTicker.Stop()
 
 	for {
 		select {
 		case <-ctx.Done():
 			log.Println("cleanup worker: shutting down")
 			return
-		case <-ticker.C:
+		case <-pollTicker.C:
 			w.processBatch(ctx)
+		case <-reclaimTicker.C:
+			w.reclaimStaleJobs(ctx)
 		}
 	}
 }
@@ -92,14 +91,27 @@ func (w *CleanupWorker) runJob(ctx context.Context, job jobs.CleanupJob) {
 	w.recordSuccess(context.Background(), job)
 }
 
+// reclaimStaleJobs is a safety net for crashes and other cases that can't be gracefully handled.
+// For cases like context cancellation, dispatched jobs will finish before the worker returns.
+func (w *CleanupWorker) reclaimStaleJobs(ctx context.Context) {
+	reclaimed, err := w.jobRepo.Reclaim(ctx, w.cfg.StaleAfter)
+	if err != nil {
+		log.Printf("cleanup worker: %v", err)
+	}
+
+	log.Printf("cleanup worker: jobs reclaimed: %d", reclaimed)
+}
+
 func (w *CleanupWorker) recordSuccess(ctx context.Context, job jobs.CleanupJob) {
 	if err := w.jobRepo.MarkDone(ctx, job.ID); err != nil {
-		log.Printf("cleanup worker: mark job: %s done: %v", job.ID, err)
+		log.Printf("cleanup worker: mark job done: %s: %v", job.ID, err)
 	}
 }
 
 func (w *CleanupWorker) recordFailure(ctx context.Context, job jobs.CleanupJob, cause error) {
-	if err := w.jobRepo.MarkFailed(ctx, job.ID, cause); err != nil {
-		log.Printf("cleanup worker: mark job: %s failed: %v", job.ID, err)
+	log.Printf("cleanup worker: job: %s failed (attempt %d/%d): %v", job.ID, job.Attempts+1, w.cfg.MaxAttempts, cause)
+
+	if err := w.jobRepo.MarkFailed(ctx, job.ID, cause, w.cfg.MaxAttempts); err != nil {
+		log.Printf("cleanup worker: mark job failed: %s: %v", job.ID, err)
 	}
 }

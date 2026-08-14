@@ -1,3 +1,0 @@
-package pg
-
-// impl jobRepo

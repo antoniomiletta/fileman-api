@@ -18,7 +18,11 @@ type AuthService struct {
 	authn    *authenticator.Authenticator
 }
 
-func NewAuthService(authRepo ports.AuthRepository, txRunner *pg.TxRunner, authn *authenticator.Authenticator) *AuthService {
+func NewAuthService(
+	authRepo ports.AuthRepository,
+	txRunner *pg.TxRunner,
+	authn *authenticator.Authenticator,
+) *AuthService {
 	return &AuthService{
 		authRepo: authRepo,
 		txRunner: txRunner,
@@ -63,6 +67,8 @@ func (s *AuthService) CreateUser(ctx context.Context, input CreateUserInput) err
 		Password: hashed,
 	}
 
+	// txRunners use temporary instances of repos so the operations can
+	// run against the passed transaction instead of the default pool.
 	return s.txRunner.Run(ctx, func(q pg.Querier) error {
 		authRepo := pg.NewAuthRepository(q)
 		if err := authRepo.SignUp(ctx, &user); err != nil {

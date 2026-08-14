@@ -1,9 +1,12 @@
 package main
 
 import (
+	"context"
 	"log"
 	"log/slog"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/antoniomiletta/fileman/config"
 	"github.com/antoniomiletta/fileman/internal/adapters/db/pg"
@@ -14,6 +17,7 @@ import (
 	"github.com/antoniomiletta/fileman/internal/pkg/authenticator"
 	"github.com/antoniomiletta/fileman/internal/ports"
 	"github.com/antoniomiletta/fileman/internal/service"
+	"github.com/antoniomiletta/fileman/internal/workers"
 )
 
 func main() {
@@ -31,13 +35,20 @@ func main() {
 	folderRepo := pg.NewFolderRepository(db)
 	fileRepo := pg.NewFileRepository(db)
 	txRunner := pg.NewTxRunner(db.Pool())
+	cleanupRepo := pg.NewCleanupJobRepository(db)
 
 	authn := authenticator.NewAuthenticator(cfg.Auth)
 	resp := transport.NewResponder(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 
 	authSvc := service.NewAuthService(authRepo, txRunner, authn)
 	folderSvc := service.NewFolderService(folderRepo)
-	fileSvc := service.NewFileService(fileRepo, folderRepo, store)
+	fileSvc := service.NewFileService(fileRepo, folderRepo, store, txRunner, cleanupRepo)
+
+	// Cancellable context is passed to worker so it can shutdown gracefully.
+	cleanupWorker := workers.NewCleanupWorker(cleanupRepo, store, cfg.Cleanup)
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
+	go cleanupWorker.Run(ctx)
 
 	svr := api.NewServer(api.ServerDeps{
 		Cfg:       cfg.Server,

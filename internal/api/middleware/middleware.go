@@ -34,7 +34,7 @@ func (m *Middleware) Auth(next http.Handler) http.Handler {
 
 		claims, err := m.authn.VerifyToken(token)
 		if err != nil {
-			m.resp.WriteError(w, err)
+			m.resp.WriteError(w, auth.ErrUnauthenticated)
 			return
 		}
 

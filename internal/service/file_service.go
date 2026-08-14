@@ -8,6 +8,7 @@ import (
 
 	"strings"
 
+	"github.com/antoniomiletta/fileman/internal/adapters/db/pg"
 	"github.com/antoniomiletta/fileman/internal/domain/auth"
 	"github.com/antoniomiletta/fileman/internal/domain/file"
 	"github.com/antoniomiletta/fileman/internal/domain/folder"
@@ -18,16 +19,26 @@ import (
 )
 
 type FileService struct {
-	fileRepo   ports.FileRepository
-	folderRepo ports.FolderRepository
-	store      ports.StorageBackend
+	fileRepo    ports.FileRepository
+	folderRepo  ports.FolderRepository
+	store       ports.StorageBackend
+	txRunner    *pg.TxRunner
+	cleanupRepo ports.CleanupJobRepository
 }
 
-func NewFileService(fileRepo ports.FileRepository, folderRepo ports.FolderRepository, store ports.StorageBackend) *FileService {
+func NewFileService(
+	fileRepo ports.FileRepository,
+	folderRepo ports.FolderRepository,
+	store ports.StorageBackend,
+	txRunner *pg.TxRunner,
+	cleanupRepo ports.CleanupJobRepository,
+) *FileService {
 	return &FileService{
-		fileRepo:   fileRepo,
-		folderRepo: folderRepo,
-		store:      store,
+		fileRepo:    fileRepo,
+		folderRepo:  folderRepo,
+		store:       store,
+		txRunner:    txRunner,
+		cleanupRepo: cleanupRepo,
 	}
 }
 
@@ -170,5 +181,17 @@ func (s *FileService) DeleteFile(ctx context.Context, id uuid.UUID) error {
 		return fmt.Errorf("%w: cannot delete this file", auth.ErrForbidden)
 	}
 
-	return s.fileRepo.Delete(ctx, id)
+	return s.txRunner.Run(ctx, func(q pg.Querier) error {
+		fileRepo := pg.NewFileRepository(q)
+		if err := fileRepo.Delete(ctx, id); err != nil {
+			return err
+		}
+
+		cleanupRepo := pg.NewCleanupJobRepository(q)
+		if err := cleanupRepo.Enqueue(ctx, f.StorageKey); err != nil {
+			return err
+		}
+		return nil
+	})
+
 }

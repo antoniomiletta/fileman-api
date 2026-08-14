@@ -14,7 +14,7 @@ func NewTxRunner(pool *pgxpool.Pool) *TxRunner {
 	return &TxRunner{pool: pool}
 }
 
-// Runs fn as an atomic transaction on the database
+// Run executes fn as an atomic transaction on the database.
 func (r *TxRunner) Run(ctx context.Context, fn func(Querier) error) error {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
