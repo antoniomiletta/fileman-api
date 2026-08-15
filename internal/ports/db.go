@@ -9,6 +9,8 @@ import (
 	"github.com/antoniomiletta/fileman/internal/domain/folder"
 	"github.com/antoniomiletta/fileman/internal/jobs"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 type AuthRepository interface {
@@ -36,6 +38,16 @@ type FolderRepository interface {
 	FindByID(ctx context.Context, id uuid.UUID) (*folder.Folder, error)
 	FindByNameInParent(ctx context.Context, name string, parentID uuid.UUID) (*folder.Folder, error)
 	ListDescendantFileKeys(ctx context.Context, id uuid.UUID) ([]string, error)
+}
+
+type Querier interface {
+	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+	Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error)
+}
+
+type TxRunner interface {
+	RunTx(ctx context.Context, fn func(Querier) error) error
 }
 
 type CleanupJobRepository interface {

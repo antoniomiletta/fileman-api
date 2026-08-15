@@ -6,14 +6,15 @@ import (
 	"time"
 
 	"github.com/antoniomiletta/fileman/internal/jobs"
+	"github.com/antoniomiletta/fileman/internal/ports"
 	"github.com/google/uuid"
 )
 
 type CleanupJobRepository struct {
-	db Querier
+	db ports.Querier
 }
 
-func NewCleanupJobRepository(q Querier) *CleanupJobRepository {
+func NewCleanupJobRepository(q ports.Querier) *CleanupJobRepository {
 	return &CleanupJobRepository{
 		db: q,
 	}

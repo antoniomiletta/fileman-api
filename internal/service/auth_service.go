@@ -14,13 +14,13 @@ import (
 
 type AuthService struct {
 	authRepo ports.AuthRepository
-	txRunner *pg.TxRunner
+	txRunner ports.TxRunner
 	authn    *authenticator.Authenticator
 }
 
 func NewAuthService(
 	authRepo ports.AuthRepository,
-	txRunner *pg.TxRunner,
+	txRunner ports.TxRunner,
 	authn *authenticator.Authenticator,
 ) *AuthService {
 	return &AuthService{
@@ -69,7 +69,7 @@ func (s *AuthService) CreateUser(ctx context.Context, input CreateUserInput) err
 
 	// txRunners use temporary instances of repos so the operations can
 	// run against the passed transaction instead of the default pool.
-	return s.txRunner.Run(ctx, func(q pg.Querier) error {
+	return s.txRunner.RunTx(ctx, func(q ports.Querier) error {
 		authRepo := pg.NewAuthRepository(q)
 		if err := authRepo.SignUp(ctx, &user); err != nil {
 			return err

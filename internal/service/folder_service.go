@@ -16,10 +16,10 @@ import (
 
 type FolderService struct {
 	folderRepo ports.FolderRepository
-	txRunner   *pg.TxRunner
+	txRunner   ports.TxRunner
 }
 
-func NewFolderService(repo ports.FolderRepository, txRunner *pg.TxRunner) *FolderService {
+func NewFolderService(repo ports.FolderRepository, txRunner ports.TxRunner) *FolderService {
 	return &FolderService{
 		folderRepo: repo,
 		txRunner:   txRunner,
@@ -185,7 +185,7 @@ func (s *FolderService) DeleteFolder(ctx context.Context, id uuid.UUID) error {
 		return folder.ErrCannotDeleteRootFolder
 	}
 
-	return s.txRunner.Run(ctx, func(q pg.Querier) error {
+	return s.txRunner.RunTx(ctx, func(q ports.Querier) error {
 		folderRepo := pg.NewFolderRepository(q)
 		cleanupRepo := pg.NewCleanupJobRepository(q)
 

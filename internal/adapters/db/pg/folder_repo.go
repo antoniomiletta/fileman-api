@@ -7,15 +7,16 @@ import (
 
 	"github.com/antoniomiletta/fileman/internal/domain/file"
 	"github.com/antoniomiletta/fileman/internal/domain/folder"
+	"github.com/antoniomiletta/fileman/internal/ports"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
 
 type FolderRepository struct {
-	db Querier
+	db ports.Querier
 }
 
-func NewFolderRepository(q Querier) *FolderRepository {
+func NewFolderRepository(q ports.Querier) *FolderRepository {
 	return &FolderRepository{db: q}
 }
 
@@ -71,7 +72,7 @@ func (r *FolderRepository) ListChildren(ctx context.Context, folderID uuid.UUID)
 	}, nil
 }
 
-func listChildFolders(ctx context.Context, db Querier, parentID uuid.UUID) ([]*folder.Folder, error) {
+func listChildFolders(ctx context.Context, db ports.Querier, parentID uuid.UUID) ([]*folder.Folder, error) {
 	const query = `
 		SELECT id, owner_id, parent_id, name, created_at, updated_at
 		FROM folders
@@ -107,7 +108,7 @@ func listChildFolders(ctx context.Context, db Querier, parentID uuid.UUID) ([]*f
 
 	return subfolders, nil
 }
-func listChildFiles(ctx context.Context, db Querier, parentID uuid.UUID) ([]*file.File, error) {
+func listChildFiles(ctx context.Context, db ports.Querier, parentID uuid.UUID) ([]*file.File, error) {
 	const query = `
 		SELECT id, owner_id, parent_id, name, mime_type, size, storage_key, upload_status, created_at, updated_at
 		FROM files

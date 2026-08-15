@@ -5,7 +5,6 @@ endif
 include .env
 export
 
-
 BUILD_DIR = ./bin
 BINARY_NAME = fileman
 ENTRYPOINT = ./cmd/server/main.go
@@ -13,7 +12,7 @@ ENTRYPOINT = ./cmd/server/main.go
 DB_URL = postgres://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable
 MIGRATIONS_DIR = db/migrations
 
-.PHONY:dev build run clean docker-up docker-down docker-ps migrate-up migrate-down migrate-version
+.PHONY: dev build run test test-integration clean docker-up docker-down docker-down-v docker-ps migrate-up migrate-down migrate-version
 
 dev:
 	go run $(ENTRYPOINT)
@@ -23,6 +22,12 @@ build:
 
 run: build
 	./$(BUILD_DIR)/$(BINARY_NAME)
+
+test:
+	go test -short ./... | grep -v "no test files"
+
+test-integration:
+	go test ./... | grep -v "no test files"
 
 clean:
 	rm -rf $(BUILD_DIR)

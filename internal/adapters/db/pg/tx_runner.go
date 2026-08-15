@@ -3,6 +3,7 @@ package pg
 import (
 	"context"
 
+	"github.com/antoniomiletta/fileman/internal/ports"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -14,8 +15,8 @@ func NewTxRunner(pool *pgxpool.Pool) *TxRunner {
 	return &TxRunner{pool: pool}
 }
 
-// Run executes fn as an atomic transaction on the database.
-func (r *TxRunner) Run(ctx context.Context, fn func(Querier) error) error {
+// RunTx executes fn as an atomic transaction on the database.
+func (r *TxRunner) RunTx(ctx context.Context, fn func(ports.Querier) error) error {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return err

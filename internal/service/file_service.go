@@ -22,7 +22,7 @@ type FileService struct {
 	fileRepo    ports.FileRepository
 	folderRepo  ports.FolderRepository
 	store       ports.StorageBackend
-	txRunner    *pg.TxRunner
+	txRunner    ports.TxRunner
 	cleanupRepo ports.CleanupJobRepository
 }
 
@@ -30,7 +30,7 @@ func NewFileService(
 	fileRepo ports.FileRepository,
 	folderRepo ports.FolderRepository,
 	store ports.StorageBackend,
-	txRunner *pg.TxRunner,
+	txRunner ports.TxRunner,
 	cleanupRepo ports.CleanupJobRepository,
 ) *FileService {
 	return &FileService{
@@ -185,7 +185,7 @@ func (s *FileService) DeleteFile(ctx context.Context, id uuid.UUID) error {
 		return fmt.Errorf("%w: cannot delete this file", auth.ErrForbidden)
 	}
 
-	return s.txRunner.Run(ctx, func(q pg.Querier) error {
+	return s.txRunner.RunTx(ctx, func(q ports.Querier) error {
 		fileRepo := pg.NewFileRepository(q)
 		if err := fileRepo.Delete(ctx, id); err != nil {
 			return err

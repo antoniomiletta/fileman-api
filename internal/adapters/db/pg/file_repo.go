@@ -6,15 +6,16 @@ import (
 	"fmt"
 
 	"github.com/antoniomiletta/fileman/internal/domain/file"
+	"github.com/antoniomiletta/fileman/internal/ports"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
 
 type FileRepository struct {
-	db Querier
+	db ports.Querier
 }
 
-func NewFileRepository(q Querier) *FileRepository {
+func NewFileRepository(q ports.Querier) *FileRepository {
 	return &FileRepository{db: q}
 }
 

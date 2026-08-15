@@ -6,14 +6,15 @@ import (
 	"fmt"
 
 	"github.com/antoniomiletta/fileman/internal/domain/auth"
+	"github.com/antoniomiletta/fileman/internal/ports"
 	"github.com/jackc/pgx/v5"
 )
 
 type AuthRepository struct {
-	db Querier
+	db ports.Querier
 }
 
-func NewAuthRepository(q Querier) *AuthRepository {
+func NewAuthRepository(q ports.Querier) *AuthRepository {
 	return &AuthRepository{db: q}
 }
 
