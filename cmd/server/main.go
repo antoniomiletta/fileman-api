@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -56,10 +57,15 @@ func main() {
 
 	// Start cleanup worker
 	cleanupWorker := workers.NewCleanupWorker(cleanupRepo, store, cfg.Cleanup)
+
 	// Cancellable context is passed to worker so it can shutdown gracefully.
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
-	go cleanupWorker.Run(ctx)
+
+	var wg sync.WaitGroup
+	wg.Go(func() {
+		cleanupWorker.Run(ctx)
+	})
 
 	// Start server
 	chServeErr := make(chan error, 1)
@@ -72,7 +78,7 @@ func main() {
 		log.Printf("shutdown signal received, stopping server...")
 		// Server shutdown uses a fresh context, otherwise the cancellation signal
 		// would make the shutdown itself fail.
-		shutdownCtx, shutdownCancel := context.WithTimeout(ctx, time.Second*10)
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), time.Second*10)
 		defer shutdownCancel()
 		if err := svr.Shutdown(shutdownCtx); err != nil {
 			log.Printf("failed to shutdown server: %v", err)
@@ -83,6 +89,7 @@ func main() {
 		}
 	}
 
+	wg.Wait()
 }
 
 func initDb(cfg config.DBConfig) *pg.DB {
@@ -102,7 +109,9 @@ func initStorage(cfg config.StorageConfig) ports.StorageBackend {
 		if cfg.LocalConfig.LocalRoot == "" {
 			log.Fatalf("STORAGE_BACKEND=local but LOCAL_STORAGE_ROOT is not set")
 		}
-		os.MkdirAll(cfg.LocalConfig.LocalRoot, local.DataDirPerm) // rwxr-xr-x
+		if err := os.MkdirAll(cfg.LocalConfig.LocalRoot, local.DataDirPerm); err != nil {
+			log.Fatalf("failed to create storage root: %v", err)
+		}
 		store = local.NewLocalStorage(cfg.LocalConfig)
 	case "s3":
 		if cfg.S3Config.S3Bucket == "" {

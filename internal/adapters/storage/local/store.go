@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 )
 
-const DataDirPerm os.FileMode = 0o755
+const DataDirPerm os.FileMode = 0o755 // rwxr-xr-x
 
 // Upload writes r into fileKey, creating any necessary parent directories.
 // The write is atomic: content is staged in a temp file and rename only happens
