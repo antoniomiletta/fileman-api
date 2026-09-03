@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/antoniomiletta/fileman/internal/domain/file"
 	"github.com/antoniomiletta/fileman/internal/ports"
@@ -185,4 +186,46 @@ func (r *FileRepository) MarkUploaded(ctx context.Context, id uuid.UUID) error {
 	}
 
 	return nil
+}
+
+func (r *FileRepository) ListStale(ctx context.Context, staleTime time.Duration) ([]*file.File, error) {
+	const query = `
+		SELECT id, owner_id, parent_id, name, mime_type, size, storage_key, upload_status, created_at, updated_at
+		FROM files
+		WHERE upload_status = $1
+		AND updated_at < NOW() - ($2 * INTERVAL '1 second')
+		`
+
+	rows, err := r.db.Query(ctx, query, file.UploadStatusPending, staleTime.Seconds())
+	if err != nil {
+		return nil, fmt.Errorf("postgres: list stale files: %w", err)
+	}
+	defer rows.Close()
+
+	var stale []*file.File
+
+	for rows.Next() {
+		var f file.File
+		if err := rows.Scan(
+			&f.ID,
+			&f.OwnerID,
+			&f.ParentID,
+			&f.Name,
+			&f.MIMEType,
+			&f.Size,
+			&f.StorageKey,
+			&f.UploadStatus,
+			&f.CreatedAt,
+			&f.UpdatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("postgres: scan file: %w", err)
+		}
+		stale = append(stale, &f)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("postgres: iterate stale files: %w", err)
+	}
+
+	return stale, nil
 }

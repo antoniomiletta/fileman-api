@@ -54,8 +54,6 @@ func (w *CleanupWorker) processBatch(ctx context.Context) {
 		log.Printf("cleanup worker: claim batch: %v", err)
 		return
 	}
-	log.Printf("cleanup worker: jobs claimed: %d", len(batch))
-
 	inFlight := make(chan struct{}, w.cfg.MaxInFlight)
 
 	var wg sync.WaitGroup
@@ -98,7 +96,9 @@ func (w *CleanupWorker) reclaimStaleJobs(ctx context.Context) {
 		log.Printf("cleanup worker: %v", err)
 	}
 
-	log.Printf("cleanup worker: jobs reclaimed: %d", reclaimed)
+	if reclaimed > 0 {
+		log.Printf("cleanup worker: jobs reclaimed: %d", reclaimed)
+	}
 }
 
 func (w *CleanupWorker) recordSuccess(ctx context.Context, job jobs.CleanupJob) {

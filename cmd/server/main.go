@@ -55,6 +55,12 @@ func main() {
 		Resp:      resp,
 	})
 
+	// Sweep inconsitent uploads
+	uploadReconciler := workers.NewUploadReconciler(fileRepo, store)
+	if err := uploadReconciler.Sweep(context.Background(), time.Hour); err != nil {
+		log.Println(err)
+	}
+
 	// Start cleanup worker
 	cleanupWorker := workers.NewCleanupWorker(cleanupRepo, store, cfg.Cleanup)
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)

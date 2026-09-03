@@ -7,6 +7,7 @@ import (
 	"io"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/antoniomiletta/fileman/internal/domain/auth"
 	"github.com/antoniomiletta/fileman/internal/domain/file"
@@ -87,6 +88,11 @@ func (f *fakeFileRepo) MarkUploaded(ctx context.Context, id uuid.UUID) error {
 	}
 	fl.UploadStatus = file.UploadStatusComplete
 	return nil
+}
+
+// Not exercised in this layer of tests
+func (f *fakeFileRepo) ListStale(ctx context.Context, staleTime time.Duration) ([]*file.File, error) {
+	return nil, nil
 }
 
 type fakeStorageBackend struct {

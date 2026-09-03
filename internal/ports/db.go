@@ -26,6 +26,7 @@ type FileRepository interface {
 	FindByID(ctx context.Context, id uuid.UUID) (*file.File, error)
 	FindByNameInParent(ctx context.Context, name string, parentID uuid.UUID) (*file.File, error)
 	MarkUploaded(ctx context.Context, id uuid.UUID) error
+	ListStale(ctx context.Context, staleTime time.Duration) ([]*file.File, error)
 }
 
 type FolderRepository interface {
