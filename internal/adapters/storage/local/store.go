@@ -7,6 +7,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+
+	"github.com/antoniomiletta/fileman/internal/pkg/storage"
 )
 
 const DataDirPerm os.FileMode = 0o755 // rwxr-xr-x
@@ -36,7 +38,7 @@ func (s *LocalStorage) Upload(ctx context.Context, fileKey string, r io.Reader, 
 	}
 
 	if written != size {
-		return fmt.Errorf("%w: expected %d bytes, wrote %d", ErrFileSizeMismatch, size, written)
+		return fmt.Errorf("%w: expected %d bytes, wrote %d", storage.ErrFileSizeMismatch, size, written)
 	}
 
 	if err := tmp.Close(); err != nil {
@@ -56,7 +58,7 @@ func (s *LocalStorage) Download(ctx context.Context, fileKey string) (io.ReadClo
 	f, err := os.Open(s.fullPath(fileKey))
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return nil, fmt.Errorf("local storage: download: open file: %w", ErrObjectNotFound)
+			return nil, fmt.Errorf("local storage: download: open file: %w", storage.ErrObjectNotFound)
 		}
 		return nil, fmt.Errorf("local storage: download: open file: %w", err)
 	}

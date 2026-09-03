@@ -36,7 +36,7 @@ func (c *CleanupJobRepository) Enqueue(ctx context.Context, storageKey string) e
 }
 
 // ClaimBatch selects up to limit pending jobs, locks and marks them as processing.
-// Concurrent callers can never claim the same job becase of SKIP LOCKED.
+// Concurrent callers can never claim the same job because of SKIP LOCKED.
 func (c *CleanupJobRepository) ClaimBatch(ctx context.Context, limit int) ([]jobs.CleanupJob, error) {
 	const query = `
 		UPDATE storage_cleanup_jobs

@@ -57,12 +57,11 @@ func main() {
 
 	// Start cleanup worker
 	cleanupWorker := workers.NewCleanupWorker(cleanupRepo, store, cfg.Cleanup)
-
-	// Cancellable context is passed to worker so it can shutdown gracefully.
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
 	var wg sync.WaitGroup
+	defer wg.Wait() // runs before db.Close()
 	wg.Go(func() {
 		cleanupWorker.Run(ctx)
 	})
@@ -88,8 +87,6 @@ func main() {
 			log.Fatalf("server error: %v", err)
 		}
 	}
-
-	wg.Wait()
 }
 
 func initDb(cfg config.DBConfig) *pg.DB {

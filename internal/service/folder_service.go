@@ -27,6 +27,10 @@ func NewFolderService(repo ports.FolderRepository, txRunner ports.TxRunner) *Fol
 }
 
 func (s *FolderService) CreateFolder(ctx context.Context, parentID *uuid.UUID, name string) error {
+	if err := folder.ValidateFolderName(name); err != nil {
+		return err
+	}
+
 	if parentID == nil {
 		return folder.ErrCannotCreateNewRootFolder
 	}
@@ -43,10 +47,6 @@ func (s *FolderService) CreateFolder(ctx context.Context, parentID *uuid.UUID, n
 
 	if parent.OwnerID != callerID {
 		return fmt.Errorf("%w: cannot create on specified parent", auth.ErrForbidden)
-	}
-
-	if err := folder.ValidateFolderName(name); err != nil {
-		return err
 	}
 
 	clash, err := s.folderRepo.FindByNameInParent(ctx, name, *parentID)
@@ -195,10 +195,11 @@ func (s *FolderService) DeleteFolder(ctx context.Context, id uuid.UUID) error {
 		}
 
 		for _, key := range keys {
-			cleanupRepo.Enqueue(ctx, key)
+			if err := cleanupRepo.Enqueue(ctx, key); err != nil {
+				return err
+			}
 		}
 
 		return folderRepo.Delete(ctx, id)
 	})
-
 }

@@ -92,8 +92,11 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (string
 	}
 
 	user, err := s.authRepo.FindByEmail(ctx, email)
-	if err != nil && errors.Is(err, auth.ErrUserNotFound) {
-		return "", auth.ErrInvalidCredentials
+	if err != nil {
+		if errors.Is(err, auth.ErrUserNotFound) {
+			return "", auth.ErrInvalidCredentials
+		}
+		return "", err
 	}
 
 	if !authenticator.Compare(password, user.Password) {

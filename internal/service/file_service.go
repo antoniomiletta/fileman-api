@@ -50,6 +50,10 @@ type CreateFileInput struct {
 }
 
 func (s *FileService) CreateFile(ctx context.Context, input CreateFileInput, fileContent io.Reader) error {
+	if err := file.ValidateFileName(input.Name); err != nil {
+		return err
+	}
+
 	callerID, err := reqctx.CallerIDFrom(ctx)
 	if err != nil {
 		return err
@@ -62,10 +66,6 @@ func (s *FileService) CreateFile(ctx context.Context, input CreateFileInput, fil
 
 	if parent.OwnerID != callerID {
 		return fmt.Errorf("%w: cannot create on specified parent", auth.ErrForbidden)
-	}
-
-	if err := file.ValidateFileName(input.Name); err != nil {
-		return err
 	}
 
 	clash, err := s.fileRepo.FindByNameInParent(ctx, input.Name, input.ParentID)

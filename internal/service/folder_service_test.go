@@ -32,7 +32,7 @@ func newFakeTxRunner(t *testing.T) *fakeTxRunner {
 }
 
 func (f *fakeTxRunner) RunTx(ctx context.Context, fn func(ports.Querier) error) error {
-	f.t.Fatal("txRunner.RunTx was called but this test did not expect a transaction")
+	f.t.Fatal("txRunner.RunTx should not be called in unit tests.")
 	return nil
 }
 
@@ -114,119 +114,6 @@ func (f *fakeFolderRepo) ListDescendantFileKeys(ctx context.Context, id uuid.UUI
 }
 
 // Tests
-func TestFolderService_MoveFolder(t *testing.T) {
-	ownerA := uuid.New()
-	ownerB := uuid.New()
-
-	setup := func() (*fakeFolderRepo, *folder.Folder, *folder.Folder, *folder.Folder) {
-		repo := newFakeFolderRepo()
-		root := &folder.Folder{ID: uuid.New(), OwnerID: ownerA, ParentID: nil, Name: "root"}
-		docs := &folder.Folder{ID: uuid.New(), OwnerID: ownerA, ParentID: &root.ID, Name: "docs"}
-		photos := &folder.Folder{ID: uuid.New(), OwnerID: ownerA, ParentID: &root.ID, Name: "photos"}
-		repo.seed(root)
-		repo.seed(docs)
-		repo.seed(photos)
-		return repo, root, docs, photos
-	}
-
-	t.Run("cannot move root folder", func(t *testing.T) {
-		repo, root, docs, _ := setup()
-		svc := service.NewFolderService(repo, newFakeTxRunner(t))
-		ctx := reqctx.WithCallerID(context.Background(), ownerA)
-
-		err := svc.MoveFolder(ctx, root.ID, docs.ID)
-		if !errors.Is(err, folder.ErrCannotMoveRootFolder) {
-			t.Fatalf("expected ErrCannotMoveRootFolder, got: %v", err)
-		}
-	})
-
-	t.Run("cannot move folder into itself", func(t *testing.T) {
-		repo, _, docs, _ := setup()
-		svc := service.NewFolderService(repo, newFakeTxRunner(t))
-		ctx := reqctx.WithCallerID(context.Background(), ownerA)
-
-		err := svc.MoveFolder(ctx, docs.ID, docs.ID)
-		if !errors.Is(err, folder.ErrCannotMoveIntoItself) {
-			t.Fatalf("expected ErrCannotMoveIntoItself, got: %v", err)
-		}
-	})
-
-	t.Run("cannot move folder into its own descendant", func(t *testing.T) {
-		repo, _, docs, _ := setup()
-		nested := &folder.Folder{ID: uuid.New(), OwnerID: ownerA, ParentID: &docs.ID, Name: "nested"}
-		repo.seed(nested)
-		svc := service.NewFolderService(repo, newFakeTxRunner(t))
-		ctx := reqctx.WithCallerID(context.Background(), ownerA)
-
-		err := svc.MoveFolder(ctx, docs.ID, nested.ID)
-		if !errors.Is(err, folder.ErrCannotMoveIntoDescendant) {
-			t.Fatalf("expected ErrCannotMoveIntoDescendant, got: %v", err)
-		}
-	})
-
-	t.Run("cannot move into already parent folder", func(t *testing.T) {
-		repo, root, docs, _ := setup()
-		svc := service.NewFolderService(repo, newFakeTxRunner(t))
-		ctx := reqctx.WithCallerID(context.Background(), ownerA)
-
-		err := svc.MoveFolder(ctx, docs.ID, root.ID)
-		if !errors.Is(err, folder.ErrAlreadyInDestination) {
-			t.Fatalf("expected ErrAlreadyInDestination, got: %v", err)
-		}
-	})
-
-	t.Run("cannot move someone else's folder", func(t *testing.T) {
-		repo, _, docs, photos := setup()
-		docs.OwnerID = ownerB
-		svc := service.NewFolderService(repo, newFakeTxRunner(t))
-		ctx := reqctx.WithCallerID(context.Background(), ownerA)
-
-		err := svc.MoveFolder(ctx, docs.ID, photos.ID)
-		if !errors.Is(err, auth.ErrForbidden) {
-			t.Fatalf("expected ErrForbidden, got: %v", err)
-		}
-	})
-
-	t.Run("cannot move into a folder owned by someone else", func(t *testing.T) {
-		repo, _, docs, photos := setup()
-		photos.OwnerID = ownerB
-		svc := service.NewFolderService(repo, newFakeTxRunner(t))
-		ctx := reqctx.WithCallerID(context.Background(), ownerA)
-
-		err := svc.MoveFolder(ctx, docs.ID, photos.ID)
-		if !errors.Is(err, auth.ErrForbidden) {
-			t.Fatalf("expected ErrForbidden, got: %v", err)
-		}
-	})
-
-	t.Run("cannot move into a folder with a name conflict", func(t *testing.T) {
-		repo, _, docs, photos := setup()
-		clash := &folder.Folder{ID: uuid.New(), OwnerID: ownerA, ParentID: &photos.ID, Name: docs.Name}
-		repo.seed(clash)
-		svc := service.NewFolderService(repo, newFakeTxRunner(t))
-		ctx := reqctx.WithCallerID(context.Background(), ownerA)
-
-		err := svc.MoveFolder(ctx, docs.ID, photos.ID)
-		if !errors.Is(err, folder.ErrFolderNameConflict) {
-			t.Fatalf("expected ErrFolderNameConflict, got: %v", err)
-		}
-	})
-
-	t.Run("successful move", func(t *testing.T) {
-		repo, _, docs, photos := setup()
-		svc := service.NewFolderService(repo, newFakeTxRunner(t))
-		ctx := reqctx.WithCallerID(context.Background(), ownerA)
-
-		if err := svc.MoveFolder(ctx, docs.ID, photos.ID); err != nil {
-			t.Fatalf("expected success, got: %v", err)
-		}
-		moved, _ := repo.FindByID(ctx, docs.ID)
-		if moved.ParentID == nil || *moved.ParentID != photos.ID {
-			t.Fatalf("expected docs to be moved under photos, got parent: %v", moved.ParentID)
-		}
-	})
-}
-
 func TestFolderService_CreateFolder(t *testing.T) {
 	ownerA := uuid.New()
 	ownerB := uuid.New()
@@ -339,4 +226,265 @@ func TestFolderService_CreateFolder(t *testing.T) {
 			t.Fatalf("expected parent %s, got %v", root.ID, created.ParentID)
 		}
 	})
+}
+
+func TestFolderService_MoveFolder(t *testing.T) {
+	ownerA := uuid.New()
+	ownerB := uuid.New()
+
+	setup := func() (*fakeFolderRepo, *folder.Folder, *folder.Folder, *folder.Folder) {
+		repo := newFakeFolderRepo()
+		root := &folder.Folder{ID: uuid.New(), OwnerID: ownerA, ParentID: nil, Name: "root"}
+		docs := &folder.Folder{ID: uuid.New(), OwnerID: ownerA, ParentID: &root.ID, Name: "docs"}
+		photos := &folder.Folder{ID: uuid.New(), OwnerID: ownerA, ParentID: &root.ID, Name: "photos"}
+		repo.seed(root)
+		repo.seed(docs)
+		repo.seed(photos)
+		return repo, root, docs, photos
+	}
+
+	t.Run("cannot move root folder", func(t *testing.T) {
+		repo, root, docs, _ := setup()
+		svc := service.NewFolderService(repo, newFakeTxRunner(t))
+		ctx := reqctx.WithCallerID(context.Background(), ownerA)
+
+		err := svc.MoveFolder(ctx, root.ID, docs.ID)
+		if !errors.Is(err, folder.ErrCannotMoveRootFolder) {
+			t.Fatalf("expected ErrCannotMoveRootFolder, got: %v", err)
+		}
+	})
+
+	t.Run("cannot move folder into itself", func(t *testing.T) {
+		repo, _, docs, _ := setup()
+		svc := service.NewFolderService(repo, newFakeTxRunner(t))
+		ctx := reqctx.WithCallerID(context.Background(), ownerA)
+
+		err := svc.MoveFolder(ctx, docs.ID, docs.ID)
+		if !errors.Is(err, folder.ErrCannotMoveIntoItself) {
+			t.Fatalf("expected ErrCannotMoveIntoItself, got: %v", err)
+		}
+	})
+
+	t.Run("cannot move folder into its own descendant", func(t *testing.T) {
+		repo, _, docs, _ := setup()
+		nested := &folder.Folder{ID: uuid.New(), OwnerID: ownerA, ParentID: &docs.ID, Name: "nested"}
+		repo.seed(nested)
+		svc := service.NewFolderService(repo, newFakeTxRunner(t))
+		ctx := reqctx.WithCallerID(context.Background(), ownerA)
+
+		err := svc.MoveFolder(ctx, docs.ID, nested.ID)
+		if !errors.Is(err, folder.ErrCannotMoveIntoDescendant) {
+			t.Fatalf("expected ErrCannotMoveIntoDescendant, got: %v", err)
+		}
+	})
+
+	t.Run("cannot move into current parent folder", func(t *testing.T) {
+		repo, root, docs, _ := setup()
+		svc := service.NewFolderService(repo, newFakeTxRunner(t))
+		ctx := reqctx.WithCallerID(context.Background(), ownerA)
+
+		err := svc.MoveFolder(ctx, docs.ID, root.ID)
+		if !errors.Is(err, folder.ErrAlreadyInDestination) {
+			t.Fatalf("expected ErrAlreadyInDestination, got: %v", err)
+		}
+	})
+
+	t.Run("cannot move someone else's folder", func(t *testing.T) {
+		repo, _, docs, photos := setup()
+		docs.OwnerID = ownerB
+		svc := service.NewFolderService(repo, newFakeTxRunner(t))
+		ctx := reqctx.WithCallerID(context.Background(), ownerA)
+
+		err := svc.MoveFolder(ctx, docs.ID, photos.ID)
+		if !errors.Is(err, auth.ErrForbidden) {
+			t.Fatalf("expected ErrForbidden, got: %v", err)
+		}
+	})
+
+	t.Run("cannot move into a folder owned by someone else", func(t *testing.T) {
+		repo, _, docs, photos := setup()
+		photos.OwnerID = ownerB
+		svc := service.NewFolderService(repo, newFakeTxRunner(t))
+		ctx := reqctx.WithCallerID(context.Background(), ownerA)
+
+		err := svc.MoveFolder(ctx, docs.ID, photos.ID)
+		if !errors.Is(err, auth.ErrForbidden) {
+			t.Fatalf("expected ErrForbidden, got: %v", err)
+		}
+	})
+
+	t.Run("cannot move into a folder with a name conflict", func(t *testing.T) {
+		repo, _, docs, photos := setup()
+		clash := &folder.Folder{ID: uuid.New(), OwnerID: ownerA, ParentID: &photos.ID, Name: docs.Name}
+		repo.seed(clash)
+		svc := service.NewFolderService(repo, newFakeTxRunner(t))
+		ctx := reqctx.WithCallerID(context.Background(), ownerA)
+
+		err := svc.MoveFolder(ctx, docs.ID, photos.ID)
+		if !errors.Is(err, folder.ErrFolderNameConflict) {
+			t.Fatalf("expected ErrFolderNameConflict, got: %v", err)
+		}
+	})
+
+	t.Run("successful move", func(t *testing.T) {
+		repo, _, docs, photos := setup()
+		svc := service.NewFolderService(repo, newFakeTxRunner(t))
+		ctx := reqctx.WithCallerID(context.Background(), ownerA)
+
+		if err := svc.MoveFolder(ctx, docs.ID, photos.ID); err != nil {
+			t.Fatalf("expected success, got: %v", err)
+		}
+		moved, _ := repo.FindByID(ctx, docs.ID)
+		if moved.ParentID == nil || *moved.ParentID != photos.ID {
+			t.Fatalf("expected docs to be moved under photos, got parent: %v", moved.ParentID)
+		}
+	})
+}
+
+func TestFolderService_ListChildren(t *testing.T) {
+	ownerA := uuid.New()
+	ownerB := uuid.New()
+
+	setup := func() (*fakeFolderRepo, *folder.Folder) {
+		repo := newFakeFolderRepo()
+		root := &folder.Folder{ID: uuid.New(), OwnerID: ownerA, ParentID: nil, Name: "root"}
+		repo.seed(root)
+		return repo, root
+	}
+
+	t.Run("cannot list children of someone else's folder", func(t *testing.T) {
+		repo, root := setup()
+		root.OwnerID = ownerB
+		svc := service.NewFolderService(repo, newFakeTxRunner(t))
+		ctx := reqctx.WithCallerID(context.Background(), ownerA)
+
+		_, err := svc.ListChildren(ctx, root.ID)
+		if !errors.Is(err, auth.ErrForbidden) {
+			t.Fatalf("expected ErrForbidden, got: %v", err)
+		}
+	})
+
+	t.Run("propagates error when folder does not exist", func(t *testing.T) {
+		repo, _ := setup()
+		svc := service.NewFolderService(repo, newFakeTxRunner(t))
+		ctx := reqctx.WithCallerID(context.Background(), ownerA)
+
+		_, err := svc.ListChildren(ctx, uuid.New())
+		if !errors.Is(err, folder.ErrFolderNotFound) {
+			t.Fatalf("expected ErrFolderNotFound, got: %v", err)
+		}
+	})
+
+	t.Run("successful list returns subfolders", func(t *testing.T) {
+		repo, root := setup()
+		child := &folder.Folder{ID: uuid.New(), OwnerID: ownerA, ParentID: &root.ID, Name: "docs"}
+		repo.seed(child)
+		svc := service.NewFolderService(repo, newFakeTxRunner(t))
+		ctx := reqctx.WithCallerID(context.Background(), ownerA)
+
+		content, err := svc.ListChildren(ctx, root.ID)
+		if err != nil {
+			t.Fatalf("expected success, got: %v", err)
+		}
+		if len(content.Subfolders) != 1 || content.Subfolders[0].ID != child.ID {
+			t.Fatalf("expected 1 subfolder (%s), got: %+v", child.ID, content.Subfolders)
+		}
+	})
+}
+
+func TestFolderService_RenameFolder(t *testing.T) {
+	ownerA := uuid.New()
+	ownerB := uuid.New()
+
+	setup := func() (*fakeFolderRepo, *folder.Folder) {
+		repo := newFakeFolderRepo()
+		root := &folder.Folder{ID: uuid.New(), OwnerID: ownerA, ParentID: nil, Name: "root"}
+		docs := &folder.Folder{ID: uuid.New(), OwnerID: ownerA, ParentID: &root.ID, Name: "docs"}
+		repo.seed(root)
+		repo.seed(docs)
+		return repo, docs
+	}
+
+	t.Run("cannot rename someone else's folder", func(t *testing.T) {
+		repo, docs := setup()
+		docs.OwnerID = ownerB
+		svc := service.NewFolderService(repo, newFakeTxRunner(t))
+		ctx := reqctx.WithCallerID(context.Background(), ownerA)
+
+		err := svc.RenameFolder(ctx, docs.ID, "documents")
+		if !errors.Is(err, auth.ErrForbidden) {
+			t.Fatalf("expected ErrForbidden, got: %v", err)
+		}
+	})
+
+	t.Run("rejects invalid name", func(t *testing.T) {
+		repo, docs := setup()
+		svc := service.NewFolderService(repo, newFakeTxRunner(t))
+		ctx := reqctx.WithCallerID(context.Background(), ownerA)
+
+		err := svc.RenameFolder(ctx, docs.ID, "")
+		if err == nil {
+			t.Fatal("expected an error for empty name, got nil")
+		}
+	})
+
+	t.Run("successful rename", func(t *testing.T) {
+		repo, docs := setup()
+		svc := service.NewFolderService(repo, newFakeTxRunner(t))
+		ctx := reqctx.WithCallerID(context.Background(), ownerA)
+
+		err := svc.RenameFolder(ctx, docs.ID, "documents")
+		if err != nil {
+			t.Fatalf("expected success, got: %v", err)
+		}
+
+		renamed, err := repo.FindByID(ctx, docs.ID)
+		if err != nil {
+			t.Fatalf("expected folder to still exist: %v", err)
+		}
+		if renamed.Name != "documents" {
+			t.Fatalf("expected name %q, got %q", "documents", renamed.Name)
+		}
+	})
+}
+
+func TestFolderService_DeleteFolder(t *testing.T) {
+	ownerA := uuid.New()
+	ownerB := uuid.New()
+
+	setup := func() (*fakeFolderRepo, *folder.Folder, *folder.Folder) {
+		repo := newFakeFolderRepo()
+		root := &folder.Folder{ID: uuid.New(), OwnerID: ownerA, ParentID: nil, Name: "root"}
+		docs := &folder.Folder{ID: uuid.New(), OwnerID: ownerA, ParentID: &root.ID, Name: "docs"}
+		repo.seed(root)
+		repo.seed(docs)
+		return repo, root, docs
+	}
+
+	t.Run("cannot delete someone else's folder", func(t *testing.T) {
+		repo, _, docs := setup()
+		docs.OwnerID = ownerB
+		svc := service.NewFolderService(repo, newFakeTxRunner(t)) // fails the test if RunTx is ever reached
+		ctx := reqctx.WithCallerID(context.Background(), ownerA)
+
+		err := svc.DeleteFolder(ctx, docs.ID)
+		if !errors.Is(err, auth.ErrForbidden) {
+			t.Fatalf("expected ErrForbidden, got: %v", err)
+		}
+	})
+
+	t.Run("cannot delete root folder", func(t *testing.T) {
+		repo, root, _ := setup()
+		svc := service.NewFolderService(repo, newFakeTxRunner(t))
+		ctx := reqctx.WithCallerID(context.Background(), ownerA)
+
+		err := svc.DeleteFolder(ctx, root.ID)
+		if !errors.Is(err, folder.ErrCannotDeleteRootFolder) {
+			t.Fatalf("expected ErrCannotDeleteRootFolder, got: %v", err)
+		}
+	})
+
+	// Cascade-cleanup (descendant files key enqueueing and folders deletetion)
+	// is not covered inside unit tests. It should be verified against a real Postgres
+	// inside an integration test via test containers.
 }

@@ -1,4 +1,4 @@
-package local
+package storage
 
 import "github.com/antoniomiletta/fileman/internal/domain"
 

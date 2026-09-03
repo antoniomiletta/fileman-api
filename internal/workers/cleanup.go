@@ -91,7 +91,7 @@ func (w *CleanupWorker) runJob(ctx context.Context, job jobs.CleanupJob) {
 }
 
 // reclaimStaleJobs is a safety net for crashes and other cases that can't be gracefully handled.
-// For cases like context cancellation, dispatched jobs will finish before the worker returns.
+// In cases like context cancellation, dispatched jobs will always finish before the worker returns.
 func (w *CleanupWorker) reclaimStaleJobs(ctx context.Context) {
 	reclaimed, err := w.jobRepo.Reclaim(ctx, w.cfg.StaleAfter)
 	if err != nil {
