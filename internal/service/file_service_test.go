@@ -469,7 +469,7 @@ func TestFileService_RenameFile(t *testing.T) {
 	})
 }
 
-func TestFileService_DeleteFile_Unit(t *testing.T) {
+func TestFileService_DeleteFile(t *testing.T) {
 	ownerA := uuid.New()
 	ownerB := uuid.New()
 
@@ -489,6 +489,103 @@ func TestFileService_DeleteFile_Unit(t *testing.T) {
 		err := svc.DeleteFile(ctx, f.ID)
 		if !errors.Is(err, auth.ErrForbidden) {
 			t.Fatalf("expected ErrForbidden, got: %v", err)
+		}
+	})
+}
+
+func TestFileService_DownloadFile(t *testing.T) {
+	ownerA := uuid.New()
+	ownerB := uuid.New()
+
+	setup := func() (*fakeFileRepo, *fakeStorageBackend, *file.File) {
+		fileRepo := newFakeFileRepo()
+		store := newFakeStorageBackend()
+		f := &file.File{
+			ID:           uuid.New(),
+			OwnerID:      ownerA,
+			ParentID:     uuid.New(),
+			Name:         "resume.pdf",
+			MIMEType:     "application/pdf",
+			StorageKey:   "owner/documents/fileid",
+			UploadStatus: file.UploadStatusComplete,
+		}
+		fileRepo.seed(f)
+		store.uploaded[f.StorageKey] = []byte("pdf content")
+		return fileRepo, store, f
+	}
+
+	newSvc := func(fileRepo *fakeFileRepo, store *fakeStorageBackend) *service.FileService {
+		return service.NewFileService(fileRepo, newFakeFolderRepo(), store, newFakeTxRunner(t), nil)
+	}
+
+	t.Run("cannot download someone else's file", func(t *testing.T) {
+		fileRepo, store, f := setup()
+		f.OwnerID = ownerB
+		svc := newSvc(fileRepo, store)
+		ctx := reqctx.WithCallerID(context.Background(), ownerA)
+
+		_, _, err := svc.DownloadFile(ctx, f.ID)
+		if !errors.Is(err, auth.ErrForbidden) {
+			t.Fatalf("expected ErrForbidden, got: %v", err)
+		}
+	})
+
+	t.Run("propagates error when file does not exist", func(t *testing.T) {
+		fileRepo, store, _ := setup()
+		svc := newSvc(fileRepo, store)
+		ctx := reqctx.WithCallerID(context.Background(), ownerA)
+
+		_, _, err := svc.DownloadFile(ctx, uuid.New())
+		if !errors.Is(err, file.ErrFileNotFound) {
+			t.Fatalf("expected ErrFileNotFound, got: %v", err)
+		}
+	})
+
+	t.Run("treats a pending upload as not found", func(t *testing.T) {
+		fileRepo, store, f := setup()
+		f.UploadStatus = file.UploadStatusPending
+		svc := newSvc(fileRepo, store)
+		ctx := reqctx.WithCallerID(context.Background(), ownerA)
+
+		_, _, err := svc.DownloadFile(ctx, f.ID)
+		if !errors.Is(err, file.ErrFileNotFound) {
+			t.Fatalf("expected ErrFileNotFound, got: %v", err)
+		}
+	})
+
+	t.Run("propagates a storage backend error", func(t *testing.T) {
+		fileRepo, store, f := setup()
+		delete(store.uploaded, f.StorageKey) // simulate: DB row exists, object missing from storage
+		svc := newSvc(fileRepo, store)
+		ctx := reqctx.WithCallerID(context.Background(), ownerA)
+
+		_, _, err := svc.DownloadFile(ctx, f.ID)
+		if !errors.Is(err, storage.ErrObjectNotFound) {
+			t.Fatalf("expected ErrObjectNotFound, got: %v", err)
+		}
+	})
+
+	t.Run("successful download returns file metadata and content", func(t *testing.T) {
+		fileRepo, store, f := setup()
+		svc := newSvc(fileRepo, store)
+		ctx := reqctx.WithCallerID(context.Background(), ownerA)
+
+		gotFile, rc, err := svc.DownloadFile(ctx, f.ID)
+		if err != nil {
+			t.Fatalf("expected success, got: %v", err)
+		}
+		defer rc.Close()
+
+		if gotFile.Name != "resume.pdf" {
+			t.Fatalf("expected name %q, got %q", "resume.pdf", gotFile.Name)
+		}
+
+		data, err := io.ReadAll(rc)
+		if err != nil {
+			t.Fatalf("failed to read content: %v", err)
+		}
+		if string(data) != "pdf content" {
+			t.Fatalf("expected content %q, got %q", "pdf content", string(data))
 		}
 	})
 }

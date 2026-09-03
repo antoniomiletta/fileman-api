@@ -1,7 +1,11 @@
 package handler
 
 import (
+	"fmt"
+	"io"
+	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/antoniomiletta/fileman/internal/api/dto"
 	"github.com/antoniomiletta/fileman/internal/api/transport"
@@ -129,4 +133,31 @@ func (h *FileHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.resp.WriteStatus(w, http.StatusNoContent)
+}
+
+// TODO:
+func (h *FileHandler) Download(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	fileID, err := uuid.Parse(r.PathValue("id"))
+	if err != nil {
+		h.resp.WriteError(w, transport.ErrInvalidPathParam)
+		return
+	}
+
+	f, content, err := h.svc.DownloadFile(ctx, fileID)
+	if err != nil {
+		h.resp.WriteError(w, err)
+		return
+	}
+	defer content.Close()
+
+	w.Header().Set("Content-Type", f.MIMEType)
+	w.Header().Set("Content-Length", strconv.FormatInt(f.Size, 10))
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", f.Name))
+
+	if _, err := io.Copy(w, content); err != nil {
+		// Partial response already sent to the client, only log it server side
+		log.Printf("file download: copy failed for file: %s: %v", f.ID, err)
+	}
 }

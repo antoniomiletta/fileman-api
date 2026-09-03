@@ -10,6 +10,10 @@ import (
 func (s *Server) Router() http.Handler {
 	mux := http.DefaultServeMux
 
+	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
 	authHandler := handler.NewAuthHandler(s.AuthSvc, s.Resp)
 	fileHandler := handler.NewFileHandler(s.FileSvc, s.Resp)
 	folderHandler := handler.NewFolderHandler(s.FolderSvc, s.Resp)
@@ -30,6 +34,7 @@ func (s *Server) Router() http.Handler {
 	mux.Handle("PATCH /files/{id}/move", protected(http.HandlerFunc(fileHandler.Move)))
 	mux.Handle("PATCH /files/{id}/rename", protected(http.HandlerFunc(fileHandler.Rename)))
 	mux.Handle("DELETE /files/{id}", protected(http.HandlerFunc(fileHandler.Delete)))
+	mux.Handle("GET /files/{id}/download", protected(http.HandlerFunc(fileHandler.Download)))
 
 	return mux
 }

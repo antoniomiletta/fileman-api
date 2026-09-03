@@ -199,3 +199,31 @@ func (s *FileService) DeleteFile(ctx context.Context, id uuid.UUID) error {
 	})
 
 }
+
+// TODO:
+func (s *FileService) DownloadFile(ctx context.Context, id uuid.UUID) (*file.File, io.ReadCloser, error) {
+	callerID, err := reqctx.CallerIDFrom(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	f, err := s.fileRepo.FindByID(ctx, id)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if callerID != f.OwnerID {
+		return nil, nil, fmt.Errorf("%w: cannot download this file", auth.ErrForbidden)
+	}
+
+	if f.UploadStatus != file.UploadStatusComplete {
+		return nil, nil, file.ErrFileNotFound
+	}
+
+	content, err := s.store.Download(ctx, f.StorageKey)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return f, content, nil
+}
