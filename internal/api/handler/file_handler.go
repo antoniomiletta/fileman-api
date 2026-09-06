@@ -135,6 +135,24 @@ func (h *FileHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	h.resp.WriteStatus(w, http.StatusNoContent)
 }
 
+func (h *FileHandler) Get(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	fileID, err := uuid.Parse(r.PathValue("id"))
+	if err != nil {
+		h.resp.WriteError(w, transport.ErrInvalidPathParam)
+		return
+	}
+
+	f, err := h.svc.GetFile(ctx, fileID)
+	if err != nil {
+		h.resp.WriteError(w, err)
+		return
+	}
+
+	h.resp.WriteJSON(w, http.StatusOK, f)
+}
+
 // TODO:
 func (h *FileHandler) Download(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()

@@ -8,12 +8,12 @@ import (
 )
 
 type Folder struct {
-	ID        uuid.UUID
-	OwnerID   uuid.UUID
-	ParentID  *uuid.UUID
-	Name      string
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID        uuid.UUID  `json:"id"`
+	OwnerID   uuid.UUID  `json:"owner_id"`
+	ParentID  *uuid.UUID `json:"parent_id"`
+	Name      string     `json:"name"`
+	CreatedAt time.Time  `json:"created_at"`
+	UpdatedAt time.Time  `json:"updated_at"`
 }
 
 type FolderContent struct {

@@ -493,6 +493,81 @@ func TestFileService_DeleteFile(t *testing.T) {
 	})
 }
 
+func TestFileService_GetFile(t *testing.T) {
+	ownerA := uuid.New()
+	ownerB := uuid.New()
+
+	setup := func() (*fakeFileRepo, *file.File) {
+		fileRepo := newFakeFileRepo()
+		f := &file.File{
+			ID:           uuid.New(),
+			OwnerID:      ownerA,
+			ParentID:     uuid.New(),
+			Name:         "resume.pdf",
+			MIMEType:     "application/pdf",
+			UploadStatus: file.UploadStatusPending,
+		}
+		fileRepo.seed(f)
+		return fileRepo, f
+	}
+
+	newSvc := func(fileRepo *fakeFileRepo) *service.FileService {
+		return service.NewFileService(fileRepo, newFakeFolderRepo(), newFakeStorageBackend(), newFakeTxRunner(t), nil)
+	}
+
+	t.Run("cannot get someone else's file", func(t *testing.T) {
+		fileRepo, f := setup()
+		f.OwnerID = ownerB
+		svc := newSvc(fileRepo)
+		ctx := reqctx.WithCallerID(context.Background(), ownerA)
+
+		_, err := svc.GetFile(ctx, f.ID)
+		if !errors.Is(err, auth.ErrForbidden) {
+			t.Fatalf("expected ErrForbidden, got: %v", err)
+		}
+	})
+
+	t.Run("propagates error when file does not exist", func(t *testing.T) {
+		fileRepo, _ := setup()
+		svc := newSvc(fileRepo)
+		ctx := reqctx.WithCallerID(context.Background(), ownerA)
+
+		_, err := svc.GetFile(ctx, uuid.New())
+		if !errors.Is(err, file.ErrFileNotFound) {
+			t.Fatalf("expected ErrFileNotFound, got: %v", err)
+		}
+	})
+
+	t.Run("returns metadata for a pending file", func(t *testing.T) {
+		fileRepo, f := setup()
+		svc := newSvc(fileRepo)
+		ctx := reqctx.WithCallerID(context.Background(), ownerA)
+
+		got, err := svc.GetFile(ctx, f.ID)
+		if err != nil {
+			t.Fatalf("expected success, got: %v", err)
+		}
+		if got.UploadStatus != file.UploadStatusPending {
+			t.Fatalf("expected status %q, got %q", file.UploadStatusPending, got.UploadStatus)
+		}
+	})
+
+	t.Run("successful get returns complete file metadata", func(t *testing.T) {
+		fileRepo, f := setup()
+		f.UploadStatus = file.UploadStatusComplete
+		svc := newSvc(fileRepo)
+		ctx := reqctx.WithCallerID(context.Background(), ownerA)
+
+		got, err := svc.GetFile(ctx, f.ID)
+		if err != nil {
+			t.Fatalf("expected success, got: %v", err)
+		}
+		if got.ID != f.ID || got.Name != f.Name || got.MIMEType != f.MIMEType {
+			t.Fatalf("expected returned metadata to match seeded file, got: %+v", got)
+		}
+	})
+}
+
 func TestFileService_DownloadFile(t *testing.T) {
 	ownerA := uuid.New()
 	ownerB := uuid.New()

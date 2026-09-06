@@ -200,6 +200,24 @@ func (s *FileService) DeleteFile(ctx context.Context, id uuid.UUID) error {
 
 }
 
+func (s *FileService) GetFile(ctx context.Context, id uuid.UUID) (*file.File, error) {
+	callerID, err := reqctx.CallerIDFrom(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	f, err := s.fileRepo.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	if callerID != f.OwnerID {
+		return nil, fmt.Errorf("%w: cannot access this file", auth.ErrForbidden)
+	}
+
+	return f, nil
+}
+
 // TODO:
 func (s *FileService) DownloadFile(ctx context.Context, id uuid.UUID) (*file.File, io.ReadCloser, error) {
 	callerID, err := reqctx.CallerIDFrom(ctx)
