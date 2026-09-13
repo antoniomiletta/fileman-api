@@ -192,12 +192,8 @@ func (s *FileService) DeleteFile(ctx context.Context, id uuid.UUID) error {
 		}
 
 		cleanupRepo := pg.NewCleanupJobRepository(q)
-		if err := cleanupRepo.Enqueue(ctx, f.StorageKey); err != nil {
-			return err
-		}
-		return nil
+		return cleanupRepo.Enqueue(ctx, f.StorageKey)
 	})
-
 }
 
 func (s *FileService) GetFile(ctx context.Context, id uuid.UUID) (*file.File, error) {

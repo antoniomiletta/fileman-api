@@ -45,15 +45,10 @@ func (c *DBConfig) URL() string {
 type StorageConfig struct {
 	Backend     string `env:"STORAGE_BACKEND" envDefault:"local"`
 	LocalConfig LocalConfig
-	S3Config    S3Config
 }
 
 type LocalConfig struct {
-	LocalRoot string `env:"LOCAL_STORAGE_ROOT"`
-}
-
-type S3Config struct {
-	S3Bucket string `env:"S3_BUCKET"`
+	LocalRoot string `env:"LOCAL_STORAGE_ROOT" envDefault:"./data"`
 }
 
 type AuthConfig struct {

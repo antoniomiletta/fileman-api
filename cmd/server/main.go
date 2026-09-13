@@ -12,7 +12,6 @@ import (
 
 	"github.com/antoniomiletta/fileman/config"
 	"github.com/antoniomiletta/fileman/internal/adapters/db/pg"
-	"github.com/antoniomiletta/fileman/internal/adapters/storage/awss3"
 	"github.com/antoniomiletta/fileman/internal/adapters/storage/local"
 	"github.com/antoniomiletta/fileman/internal/api"
 	"github.com/antoniomiletta/fileman/internal/api/transport"
@@ -117,10 +116,7 @@ func initStorage(cfg config.StorageConfig) ports.StorageBackend {
 		}
 		store = local.NewLocalStorage(cfg.LocalConfig)
 	case "s3":
-		if cfg.S3Config.S3Bucket == "" {
-			log.Fatalf("STORAGE_BACKEND=s3 but S3_BUCKET is not set")
-		}
-		store = awss3.NewS3Storage(cfg.S3Config)
+		log.Fatalf("S3 adapter unavailable")
 	default:
 		log.Fatalf("unexpected storage backend: %q", cfg.Backend)
 	}

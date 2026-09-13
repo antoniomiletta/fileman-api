@@ -54,10 +54,11 @@ func (w *CleanupWorker) processBatch(ctx context.Context) {
 		log.Printf("cleanup worker: claim batch: %v", err)
 		return
 	}
-	inFlight := make(chan struct{}, w.cfg.MaxInFlight)
 
 	var wg sync.WaitGroup
 	defer wg.Wait()
+
+	inFlight := make(chan struct{}, w.cfg.MaxInFlight)
 
 	for _, job := range batch {
 		select {
